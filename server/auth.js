@@ -14,7 +14,16 @@ var credentials_file;
 
 function reload_credentials() {
     credentials_file = fs.readFileSync(credentials_path);
-    credentials = JSON.parse(credentials_file);
+    if (credentials_file == "") {
+        credentials = {
+            "user_map": {},
+            "auth_map": {},
+            "session_map": {}
+        }
+        save_credentials()
+    } else {
+        credentials = JSON.parse(credentials_file);
+    }
 }
 
 function save_credentials() {
@@ -99,13 +108,13 @@ function login(user, psk) {
 
     const user_id = credentials.user_map[user];
 
-    var auth_user = credentials.aut_map[user_id];
+    var auth_user = credentials.auth_map[user_id];
 
     const stored_psk = auth_user.psk;
     const salt = auth_user.salt;
 
     const calculated_psk = hash_and_salt_string(psk, salt);
-
+    
     if (stored_psk != calculated_psk) return false;
     
     if (get_session(user) == null) return false;
@@ -142,7 +151,7 @@ function get_session(user) {
         if ("expiration" in credentials.session_map[session_id]) {
             const expiration = credentials.session_map[session_id].exipration;
             // Confirm expiration is valid integer, and hasn't expired yet
-            if (is_integer(expiration) && parseInt(user_credentials.expiration) >= get_unix_time()) {
+            if (is_integer(expiration) && parseInt(expiration) >= get_unix_time()) {
                 return session_id;
             }
         }
@@ -152,14 +161,19 @@ function get_session(user) {
 }
 
 function session(session_id) {
-    // Function that checks if a session key is valid, returns the user id
+    // Function that checks if a session key is valid, if so, it returns the user id
+    if (!(session_id in credentials.session_map)) return null;
+
+    const session_obj = credentials.session_map[session_id];
+    const expiration = session_obj.expiration;
+
+    if (is_integer(expiration) && parseInt(expiration) >= get_unix_time()) {
+        return session_obj.user_id;
+    }
+
+    return null;
 }
 
 function user_exists(user) {
     return user in credentials.user_map;
 }
-
-// const result = register("yay", "this is clearly hashed lol");
-// const result = login("yay", "this is clearly hashed lol");
-const result = get_session("yay");
-console.log(result);

@@ -111,13 +111,13 @@ function login(user, psk) {
     var auth_user = credentials.auth_map[user_id];
 
     const stored_psk = auth_user.psk;
-    const salt = auth_user.salt;
 
-    const calculated_psk = hash_and_salt_string(psk, salt);
+    const calculated_psk = hash_and_salt_string(psk, auth_user.salt);
     
     if (stored_psk != calculated_psk) return false;
     
     if (get_session(user) == null) return false;
+
     return true;
 }
 
@@ -176,4 +176,13 @@ function session(session_id) {
 
 function user_exists(user) {
     return user in credentials.user_map;
+}
+
+module.exports = {
+    register: register,
+    login: login,
+    session: session,
+    get_session: get_session,
+    user_exists: user_exists,
+    sha: sha_256
 }

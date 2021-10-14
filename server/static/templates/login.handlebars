@@ -1,0 +1,25 @@
+    <script src="/assets/script/login.js"></script>
+    <form action="/auth/login/simple" method="post">
+      <h1>Login</h1>
+      
+      <input type="hidden" name="_csrf" value="{{csrfToken}}">
+
+      <section>
+          <span id="info-message"></span>
+      </section>
+
+      <section>        
+        <label for="username">Username</label>
+        <input id="username" name="username" type="username" autocomplete="username" required>
+      </section>
+            
+      <section>        
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button id="toggle-psk" type="button" aria-label="Show passxt.">Show password</button>
+      </section>
+
+      <button type="submit" id="login">Login!</button>
+    </form>
+    </body>
+</html>

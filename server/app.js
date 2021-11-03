@@ -37,16 +37,14 @@ var exphbs  = require('express-handlebars');
 
 var cookieParser = require('cookie-parser')
 var csrf = require('csurf')
-var bodyParser = require('body-parser')
+// var bodyParser = require('body-parser')
 
 const app = new express();
 const port = 80;
 
-const static_root = __dirname + "/static/";
-
 // Middlewares
-app.use(express.static(static_root));
-app.set('views', static_root + "templates/");
+app.use(express.static(__dirname + "/static/"));
+app.set('views', __dirname + "/templates/");
 
 app.engine('handlebars', exphbs());
 app.set('view engine', 'handlebars');
@@ -54,7 +52,7 @@ app.set('view engine', 'handlebars');
 app.use(express.urlencoded());
 app.use(express.json());
 
-app.use(bodyParser.urlencoded({ extended: false }))
+// app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(csrf({ cookie: true }))
 
@@ -77,7 +75,7 @@ function get_gstring(prefix, data) {
 }
 
 async function check_session(request, response) {
-    const check_result = await cookie_schema.isValid(request.body);
+    const check_result = await cookie_schema.isValid(request.cookies);
 
     if (!check_result) {
         response.redirect(get_gstring("/login", {
@@ -86,7 +84,7 @@ async function check_session(request, response) {
         return false;
     }
 
-    const user_id = auth.session(request.body.session);
+    const user_id = auth.session(request.cookies.session);
 
     if (user_id == null) {
         response.redirect(get_gstring("/login", {
@@ -94,6 +92,7 @@ async function check_session(request, response) {
         }));
         return false;
     }
+
     return true;
 }
 
@@ -107,57 +106,115 @@ app.get("/", function (request, response) {
 
 app.get("/login", function (request, response) {
     response.render("login", {
-        root : static_root + "templates/", 
         csrfToken: request.csrfToken()
     });
 });
 
-app.post("/auth/login/simple", function (request, response) {
+app.get("/register", function (request, response) {
+    response.render("register", {
+        csrfToken: request.csrfToken()
+    });
+});
+
+app.post("/auth/login", function(request, response) {
     var check_result = login_schema.isValid(request.body).then(function(valid) {
         if (!valid) {
-            response.redirect(get_gstring("/login", {
+            response.send({
                 info: "Invalid Form Data",
-                error: 1
-            }));
+                success: 0
+            });
             return;
         }
         
         const username = request.body.username;
 
         if (!auth.user_exists(username)) {
-            response.redirect(get_gstring("/login", {
-                info: "Invalid credentials"
-            }));
+            response.send({
+                info: "Invalid credentials",
+                success: 0
+            });
             return;
         }
         
-        // If JS is not enabled, hash the password once before passing to login function.
-        const password = auth.sha(request.body.password);
+        const password = request.body.password;
 
         const result = auth.login(username, password);
 
         if (!result) {
-            response.redirect(get_gstring("/login", {
-                info: "Invalid credentials"
-            }));
+            response.send({
+                info: "Invalid credentials",
+                success: 0
+            });
             return;
         }
 
         const session = auth.get_session(username);
         
         if (session == null) {
-            response.redirect(get_gstring("/login", {
+            response.send({
                 info: "An unknown error occurred",
-                error: 1
-            }));
+                success: 0
+            });
             return;
         }
 
-        response.cookie("session", session);
-
-        response.redirect("/");
+        response.send({
+            info: "Success!",
+            session: session,
+            success: 1
+        });
     });
-});
+})
+
+app.post("/auth/register", function(request, response) {
+    var check_result = login_schema.isValid(request.body).then(function(valid) {
+        if (!valid) {
+            response.send({
+                info: "Invalid Form Data",
+                success: 0
+            });
+            return;
+        }
+        
+        const username = request.body.username;
+
+        if (auth.user_exists(username)) {
+            response.send({
+                info: "User already exists!",
+                success: 0
+            });
+            return;
+        }
+        
+        const password = request.body.password;
+
+        const result = auth.register(username, password);
+
+        if (!result) {
+            response.send({
+                info: "An unknown error occurred",
+                success: 0
+            });
+            return;
+        }
+
+        const session = auth.get_session(username);
+        
+        if (session == null) {
+            response.send({
+                info: "An unknown error occurred",
+                success: 0
+            });
+            return;
+        }
+
+        response.send({
+            info: "Success!",
+            session: session,
+            success: 1
+        });
+    });
+})
 
 app.listen(port, () => {
   console.log(`Server Listening at http://localhost:${port}`)

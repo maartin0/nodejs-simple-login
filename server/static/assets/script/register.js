@@ -1,13 +1,13 @@
-async function login(event) {
+async function register(event) {
     event.preventDefault();
 
     let element = event.submitter;
-    let username = document.getElementById("login-username").value;
-    let csrf = document.getElementById("login-csrf").value;
-    var password = await sha256(document.getElementById("login-password").value);
+    let username = document.getElementById("register-username").value;
+    let csrf = document.getElementById("register-csrf").value;
+    var password = await sha256(document.getElementById("register-password").value);
 
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/auth/login");
+    xhr.open("POST", "/auth/register");
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     xhr.responseType = "json";
@@ -21,11 +21,12 @@ async function login(event) {
                 obj.style.color = "red";
             } else {
                 document.cookie = "session=" + result.session;
-                document.location.href = "/";
+                document.location.href = "/login?info=Successfully%20Registered!%20Now%20log%20in.";
             }
         }
     }
 
+    console.log("Register req sent");
     xhr.send(JSON.stringify({
         _csrf: csrf,
         password: password,
@@ -34,7 +35,7 @@ async function login(event) {
 }
 
 function toggle_password() {
-    var input = document.getElementById("login-password");
+    var input = document.getElementById("register-password");
     if (input.type == "text") {
         input.type = "password";
     } else {
@@ -43,6 +44,6 @@ function toggle_password() {
 }
 
 window.onload = function () {
-    var login_form = document.getElementById("login_form");
-    login_form.addEventListener('submit', login);
+    var register_form = document.getElementById("register_form");
+    register_form.addEventListener('submit', register);
 }

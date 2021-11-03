@@ -1,0 +1,28 @@
+<script src="/assets/script/login.js"></script>
+<script src="/assets/script/form.js"></script>
+<link rel="stylesheet" type="text/css" href="/assets/style/form.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sjcl/1.0.8/sjcl.min.js" integrity="sha512-s0r9TyYSs5CusSDL5s/QEZQZ4DNYLDXx0S+imS+SHR9mw0Yd0Z5KNS9dw7levSp7GpjOZu/bndds3FEDrKd8dg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<div class="form container">
+    <form action="#" method="post" id="login_form">
+        <h1 class="center">Login</h1>
+        <section id="notifications" class="left"></section>
+    
+        
+        <label for="username" hidden>Username</label>
+        <input class="field center" id="login-username" name="username" placeholder="Username" type="username" autocomplete="username" required>
+
+        <br />
+
+        <label for="password" hidden>Password</label></td>
+        <input class="field center" id="login-password" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+        <button class="toggle" id="toggle-psk" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+
+        <br />
+
+        <input type="hidden" id="login-csrf" name="_csrf" value="{{csrfToken}}">
+        <button class="field submit center" type="submit" id="login">Login!</button>
+
+        </div>
+    </form>
+</div>

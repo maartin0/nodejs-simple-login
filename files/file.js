@@ -1,39 +1,53 @@
 const fs = require('fs');
 const fp = fs.promises;
+const dirname = require('path');
 
-var path;
-var file;
-var content;
-
-var default_json = {};
-
-async function load(input_path, default_content) {
-    path = input_path;
-    default_json = default_content;
-
-    await reload();
+async function get_path(filename) {
+    var path = __dirname.split("/");
+    path.splice(path.length - 1);
+    return path.join("/") + "/data/" + filename;
 }
 
-async function create_default() {
-    await fp.writeFile(path, JSON.stringify(default_json));
-}
 
-async function reload() {
-    try {
-        content = await fp.readFile(path);
-    } catch {
-        await create_default();
-        reload();
+async function init(filename) {
+    var file = {
+        path: await get_path(filename),
+        content: "{}",
+        json: {}
     }
+
+    var file = await reload(file);
+    return file;
 }
 
-async function save() {
-    await fp.writeFile(path, JSON.stringify(content));
+async function reload(file) {
+    var file_exists = true;
+    
+    try {
+        await fp.access(file.path);
+    } catch {
+        file_exists = false;
+    }
+
+    if (!file_exists) {
+        await save(file);
+    } else {
+        file.content = await fp.readFile(file.path);
+        file.json = JSON.parse(file.content);
+    }
+
+    return file;
 }
 
-module.exports = {
-    init: load,
+async function save(file) {
+    file.content = JSON.stringify(file.json);
+    await fp.writeFile(file.path, file.content);
+
+    return file;
+}
+
+module.exports = { 
+    init: init,
     reload: reload,
-    save: save,
-    json: content
-}
+    save: save
+};

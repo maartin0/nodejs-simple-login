@@ -30,3 +30,10 @@ async function reload() {
 async function save() {
     await fp.writeFile(path, JSON.stringify(content));
 }
+
+module.exports = {
+    init: load,
+    reload: reload,
+    save: save,
+    json: content
+}

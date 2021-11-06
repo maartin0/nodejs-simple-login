@@ -2,14 +2,32 @@ const fs = require('fs');
 const fp = fs.promises;
 const dirname = require('path');
 
+var open_files = {};
+
 async function get_path(filename) {
     var path = __dirname.split("/");
     path.splice(path.length - 1);
     return path.join("/") + "/data/" + filename;
 }
 
+async function try_open(path) {
+    if (open_files.has(path)) {
+        return false;
+    } else {
+        open_files.add(path);
+        return true;
+    }
+}
+
+async function close(file) {
+    if (open_files.has(file.path)) {
+        open_files.delete(file.path);
+    }
+}
 
 async function init(filename) {
+    if (!(await try_open(filename))) return null;
+
     var file = {
         path: await get_path(filename),
         content: "{}",
@@ -18,6 +36,17 @@ async function init(filename) {
 
     var file = await reload(file);
     return file;
+}
+
+async function read(filename) {
+    var file = {
+        path: await get_path(filename),
+        content: "{}",
+        json: {}
+    }
+
+    var file = await reload(file);
+    return file.json;
 }
 
 async function reload(file) {
@@ -42,12 +71,13 @@ async function reload(file) {
 async function save(file) {
     file.content = JSON.stringify(file.json);
     await fp.writeFile(file.path, file.content);
-
-    return file;
+    close(file);
 }
 
 module.exports = { 
     init: init,
     reload: reload,
-    save: save
+    save: save,
+    close: close,
+    read: read
 };

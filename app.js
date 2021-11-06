@@ -23,9 +23,17 @@ app.use(csrf({ cookie: true }));
 // ----------------------------------------------------
 
 const auth = require("./auth/router.js");
-app.use("/", auth);
+// app.use("/", auth);
 
 // ----------------------------------------------------
+
+app.get("/", function (request, response) {
+    response.render("index");
+})
+
+app.get("/login", function (request, response) {
+    response.render("login");
+})
 
 app.listen(port, () => {
   console.log(`Server Listening at http://localhost:${port}`);

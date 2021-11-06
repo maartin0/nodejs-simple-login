@@ -1,5 +1,5 @@
 const files = require("../files/file.js");
-const uuid = require("uuid").v4;
+const uuid = require("uuid");
 const bcrypt = require("bcrypt-promise");
 const rounds = 10;
 
@@ -9,7 +9,8 @@ function sleep(ms) {
 
 async function attempt(target, delay, limit, args) {
     var attempt = 0;
-    while (attempts < limit) {
+    while (attempt < limit) {
+        console.log(attempt);
         if (await target()) return true;
         attempts += 1;
         await sleep(delay);
@@ -27,15 +28,18 @@ async function set_user_id(username, user_id) {
     const register_file = await files.init("registered_users.json");
     if (register_file === null) return false;
     register_file.json[username] = user_id;
-    files.save(register_file);
+    console.log(register_file);
+    await files.save(register_file);
     return true;
 }
 
 async function register(username, password) {
-    if (get_user_id(username) != null) return false;
-    const user_id = uuid();
+    if (await get_user_id(username) != null) return false;
 
-    const user_data = await files.init(uuid + ".json");
+    const user_id = uuid.v4();
+    const user_path = user_id + ".json";
+    const user_data = await files.init(user_path);
+
     if (user_data === null) return false;
     if (user_data.content !== "{}") return false;
 
@@ -45,7 +49,6 @@ async function register(username, password) {
     };
 
     await files.save(user_data);
-
     return await attempt(set_user_id, 1000, 5, [username, user_id]);
 }
 
@@ -62,4 +65,4 @@ async function user_exists(user) {
 
 }
 
-register("hello", "world");
+register("hello", "world").then((result) => console.log(result));

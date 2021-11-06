@@ -2,7 +2,7 @@ const fs = require('fs');
 const fp = fs.promises;
 const dirname = require('path');
 
-var open_files = {};
+var open_files = new Set();
 
 async function get_path(filename) {
     var path = __dirname.split("/");

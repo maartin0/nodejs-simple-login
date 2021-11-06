@@ -10,8 +10,7 @@ function sleep(ms) {
 async function attempt(target, delay, limit, args) {
     var attempt = 0;
     while (attempt < limit) {
-        console.log(attempt);
-        if (await target()) return true;
+        if (await target(...args)) return true;
         attempts += 1;
         await sleep(delay);
     }

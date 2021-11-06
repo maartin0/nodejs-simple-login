@@ -1,3 +1,5 @@
-const test = {}
+async function test(arg) {
+    console.log("Test function ran with: " + arg);
+}
 
-console.log(test["hi"])
+test.apply(this, ["yay"]);

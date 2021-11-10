@@ -3,8 +3,11 @@ const uuid = require("uuid");
 const bcrypt = require("bcrypt-promise");
 const rounds = 10;
 
-var get_timestamp = () => + new Date();
 const session_length = 60 * 60;
+
+async function now() {
+    return + new Date();
+}
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -13,16 +16,21 @@ function sleep(ms) {
 async function attempt(target, delay, limit, args) {
     var attempt = 0;
     while (attempt < limit) {
-        if (await target(...args)) return true;
+        const result = await target(...args);
+        if (result === true) return true;
+        if (result === null) return false;
         attempts += 1;
         await sleep(delay);
     }
-    if (await target(...args)) return true;
     return false;
 }
 
 async function get_user_file(id) {
     return "users/" + id + ".json";
+}
+
+async function get_session_file(id) {
+    return "sessions/" + id + ".json"
 }
 
 async function get_user_id(username) {
@@ -53,14 +61,47 @@ async function register(username, password) {
     };
 
     await files.save(user_data);
-    return await attempt(set_user_id, 1000, 5, [username, user_id]);
+    const result = await attempt(set_user_id, 1000, 5, [username, user_id]);
+
+    return result;
 }
 
 async function create_session(user_id) {
-    return session_id;
+    if (user_id == null) return false;
+
+    // Initialise file
+    const user_file_path = await get_user_file(user_id);
+    if (!await files.exists(user_file_path)) return
+    var user_file = await files.init(user_fiie_path);
+    if (user_file === null) return false;
+
+    // Check if user exists
+    if (user_file.json.username === null) return false;
+
+    // If session already exists, invalidate it
+    const old_session = user_file.json.session;
+    if (await check_session(old_session)) await delete_session(old_session);
+
+    // Generate session id
+    const session_id =  uuid.v4();
+    user_file.json.session = session_id;
+    user_file.json.expiry = await now();
+
+    const session_file_path = await get_session_file(session_id);
+    if (await files.exists(session_file_path)) return false;
+    var session_file = files.init(session_file_path);
+    if (session_file === null) return false;
+
+    session_file.json
+
+
+
+    return true;
 }
 
 async function check_session(session_id) {
+    if (session_id == null) return false;
+
     return is_valid;
 }
 
@@ -80,6 +121,8 @@ async function login(username, password) {
     if (!bcrypt.compare(password, hash)) return false;
 
     const old_session = user_data.session;
+    if (old_session != null) await attempt(delete_session, 1000, 5, [session_id]);
+
 
 }
 

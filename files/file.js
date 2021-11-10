@@ -25,6 +25,29 @@ async function close(file) {
     }
 }
 
+async function ext_exists(filename) {
+    try {
+        await fp.access(
+            await get_path(filename);
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function exists(path) {
+    try {
+        await fp.access(
+            path;
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+
 async function init(filename) {
     if (!(await try_open(filename))) return null;
 
@@ -50,13 +73,7 @@ async function read(filename) {
 }
 
 async function reload(file) {
-    var file_exists = true;
-    
-    try {
-        await fp.access(file.path);
-    } catch {
-        file_exists = false;
-    }
+    var file_exists = await exists(file.path);
 
     if (!file_exists) {
         await save(file);
@@ -79,5 +96,6 @@ module.exports = {
     reload: reload,
     save: save,
     close: close,
-    read: read
+    read: read,
+    exists: ext_exists
 };

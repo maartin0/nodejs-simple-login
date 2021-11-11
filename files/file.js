@@ -28,7 +28,7 @@ async function close(file) {
 async function ext_exists(filename) {
     try {
         await fp.access(
-            await get_path(filename);
+            await get_path(filename)
         );
         return true;
     } catch {
@@ -39,7 +39,7 @@ async function ext_exists(filename) {
 async function exists(path) {
     try {
         await fp.access(
-            path;
+            path
         );
         return true;
     } catch {

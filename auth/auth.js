@@ -71,7 +71,7 @@ async function create_session(user_id) {
 
     // Initialise file
     const user_file_path = await get_user_file(user_id);
-    if (!await files.exists(user_file_path)) return
+    if (!await files.exists(user_file_path)) return false;
     var user_file = await files.init(user_fiie_path);
     if (user_file === null) return false;
 
@@ -92,9 +92,8 @@ async function create_session(user_id) {
     var session_file = files.init(session_file_path);
     if (session_file === null) return false;
 
-    session_file.json
-
-
+    session_file.json.user_id = user_id;
+    await files.save(session_file);
 
     return true;
 }

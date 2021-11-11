@@ -1,9 +1,12 @@
 const files = require("../files/file.js");
 const uuid = require("uuid");
+
 const bcrypt = require("bcrypt-promise");
+// bCrypt rounds
 const rounds = 10;
 
-const session_length = 60 * 60;
+// Session length in ms (Default: 1 hour)
+const session_length = 60 * 60 * 1000;
 
 /* TIME FUNCTIONS */
 async function now() {
@@ -13,6 +16,16 @@ async function now() {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+async function has_expired(check) {
+    return (check > (await now()));
+}
+
+async function get_expiry() {
+    return (await now()) + session_length;
+}
+
+/* Attempt function used for registering. Required in case of concurrent modification of the user - id map file. */
 
 async function attempt(target, delay, limit, args) {
     var attempt = 0;
@@ -40,12 +53,6 @@ async function init_user_file(id) {
     const user_file_path = await get_user_file_path(id);
     if (!await files.exists(user_file_path)) return null;
     return await files.init(user_file_path);
-}
-
-async function init_session_file(id) {
-    const session_file_path = await get_session_file_path(id);
-    if (await files.exists(session_file_path)) return null;
-    return await files.init(session_file_path);
 }
 
 
@@ -82,8 +89,10 @@ async function create_session(user_id) {
     const session_id = uuid.v4();
     user_file.json.session = session_id;
     user_file.json.expiry = await now();
-
-    var session_file = await init_session_file(session_id);
+    
+    const session_file_path = await get_session_file_path(user_id);
+    if (await files.exists(session_file_path)) return null;
+    var session_file = await files.init(session_file_path);
     if (session_file === null) return false;
 
     session_file.json.user_id = user_id;
@@ -93,20 +102,68 @@ async function create_session(user_id) {
     return true;
 }
 
+async function get_session(user_id) {
+    if (user_id == null) return null;
+
+    const user_file_path = await get_user_file_path(user_id);
+    if (!await files.exists(user_file_path)) return null;
+    var user_file = await files.read(user_file_path);
+
+    const session_id = user_file.session;
+    const valid = await check_session(session_id);
+
+    if (valid) return session_id;
+
+    const success = await create_session(user_id);
+    if (!success) return null;
+
+    user_file = await files.read(user_file_path);
+
+    const new_session_id = user_file.json.session;
+    const new_valid = await check_session(new_session_id);
+
+    if (valid) return new_session_id;
+    return null;
+}
+
 async function check_session(session_id) {
     if (session_id == null) return false;
 
-    return is_valid;
+    const session_file_path = await get_session_file_path(session_id);
+    if (!files.exists(session_file_path)) return false;
+
+    var session_file = await files.read(session_file_path);
+    if (session_file === null) return false;
+
+    const user_id = session_file.user_id;
+    if (user_id == null) return false;
+    
+    const user_file_path = await get_user_file_path(id);
+    if (!await files.exists(user_file_path)) return null;
+    var user_file = await files.read(user_file_path);
+
+    const expiry = user_file.expiry;
+    if (expiry == null) return false
+
+    const has_expired = await has_expired(expiry);
+    if (has_expired) {
+        await delete_session(session_id);
+        return false;
+    }
+
+    return true;
 }
 
 async function delete_session(session_id) {
     if (session_id == null) return false;
 
     const session_file_path = await get_session_file_path(session_id);
+    if (!files.exists(session_file_path)) return false;
+
     var session_file = await files.read(session_file_path);
     if (session_file === null) return false;
 
-    const user_id = session_file.json.user_id;
+    const user_id = session_file.user_id;
     if (user_id == null) return false;
 
     const user_file = await init_user_file(user_id);
@@ -173,7 +230,10 @@ async function login(username, password) {
 async function run() {
     const user_id = await get_user_id("hello");
     const result = await create_session(user_id);
-    console.log("Creating session for " + user_id + ": " + result);
+    console.log("Creating session for " + user_id + ": " + result); 
+
+    const session_id = await get_session(user_id);
+    console.log(session_id);
 }
 
 run();

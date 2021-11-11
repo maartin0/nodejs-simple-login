@@ -102,21 +102,28 @@ async function check_session(session_id) {
 async function delete_session(session_id) {
     if (session_id == null) return false;
 
-    var session_file = await files.read(await get_session_file_path(session_id));
+    const session_file_path = await get_session_file_path(session_id);
+    var session_file = await files.read(session_file_path);
     if (session_file === null) return false;
 
     const user_id = session_file.json.user_id;
     if (user_id == null) return false;
 
     const user_file = await init_user_file(user_id);
-    if (user_file === null) return false
+    if (user_file === null) return false;
 
     if (user_file.json.session === session_id) {
         user_file.json.session = null;
         user_file.json.expiry = null;
+        await files.save(user_file);
+    } else {
+        await files.close(user_file);
+        return false;
     }
 
-    return is_valid;
+    await files.delete_file(session_file_path);
+
+    return true;
 }
 
 /* PUBLIC AUTH FUNCTIONS */

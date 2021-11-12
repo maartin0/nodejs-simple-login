@@ -86,10 +86,6 @@ async function create_session(user_id) {
     const old_session = user_data.session;
     if (old_session != null) {
         const r = await delete_session(old_session);
-        console.log(r);
-        console.log(files.debug)
-        //const session_file_path = await get_session_file_path(old_session);
-        //await files.delete_file(session_file_path);
     };
 
     // Previous user file was read only to prevent collision with delete_session function.
@@ -185,7 +181,6 @@ async function delete_session(session_id) {
         user_file.json.session = undefined;
         user_file.json.expiry = undefined;
         await files.save(user_file);
-        console.log("closed");
     } else {
         await files.close(user_file);
         return false;

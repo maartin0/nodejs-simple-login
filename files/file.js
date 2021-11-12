@@ -20,9 +20,7 @@ async function try_open(path) {
 }
 
 async function close(file) {
-    if (open_files.has(file.path)) {
-        open_files.delete(file.path);
-    }
+    const r = open_files.delete(file.path);
 }
 
 async function ext_exists(filename) {
@@ -49,10 +47,11 @@ async function exists(path) {
 
 
 async function init(filename) {
-    if (!(await try_open(filename))) return null;
+    const file_path = await get_path(filename);
+    if (!(await try_open(file_path))) return null;
 
     var file = {
-        path: await get_path(filename),
+        path: file_path,
         content: "{}",
         json: {}
     }
@@ -107,6 +106,5 @@ module.exports = {
     close: close,
     read: read,
     exists: ext_exists,
-    delete_file: delete_file,
-    debug: open_files
+    delete_file: delete_file
 };

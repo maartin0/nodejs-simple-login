@@ -89,9 +89,7 @@ async function reload(file) {
 
 async function delete_file(filename) {
     const path = await get_path(filename);
-    console.log("DELETING: " + path);
     if (open_files.has(path)) return false;
-    console.log("success");
     await fp.rm(path);
     return true;
 }
@@ -99,7 +97,7 @@ async function delete_file(filename) {
 async function save(file) {
     file.content = JSON.stringify(file.json);
     await fp.writeFile(file.path, file.content);
-    close(file);
+    await close(file);
 }
 
 module.exports = { 
@@ -109,5 +107,6 @@ module.exports = {
     close: close,
     read: read,
     exists: ext_exists,
-    delete_file: delete_file
+    delete_file: delete_file,
+    debug: open_files
 };

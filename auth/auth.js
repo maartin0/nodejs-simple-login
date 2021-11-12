@@ -317,26 +317,26 @@ async function modify_password(user_id, new_password) {
 }
 
 module.exports = {
-    "entry": {
-        "login": login,
-        "register": register
+    entry: {
+        login: login,
+        register: register
     },
-    "session": {
-        "get": get_session,
-        "delete": delete_session,
-        "verify": check_session
+    session: {
+        fetch: get_session,
+        remove: delete_session,
+        verify: check_session
     },
-    "account": {
-        "delete": delete_account,
-        "modify": {
-            "username": modify_username,
-            "password": modify_password
+    account: {
+        remove: delete_account,
+        modify: {
+            username: modify_username,
+            password: modify_password
         }
     },
-    "get": {
-        "user": {
-            "id": get_user_id,
-            "name": get_user_name
+    fetch: {
+        user: {
+            id: get_user_id,
+            name: get_user_name
         }
     }
 }

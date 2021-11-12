@@ -20,7 +20,7 @@ async function try_open(path) {
 }
 
 async function close(file) {
-    const r = open_files.delete(file.path);
+    return open_files.delete(file.path);
 }
 
 async function ext_exists(filename) {

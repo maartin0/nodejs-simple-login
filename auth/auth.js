@@ -17,7 +17,12 @@ function sleep(ms) {
 }
 
 async function has_expired(check) {
-    return (check > (await now()));
+    const cur = await now();
+    console.log("Current epoch: " + cur);
+    console.log("Supplied: " + check);
+    const result = check > cur;
+    console.log("Is invalid: " + result);
+    return result;
 }
 
 async function get_expiry() {
@@ -36,6 +41,13 @@ async function attempt(target, delay, limit, args) {
         await sleep(delay);
     }
     return false;
+}
+
+/* MISC FUNCTIONS */
+
+async function init() {
+    var users_file = await files.init("users.json");
+    await files.close(users_file);
 }
 
 /* PATH & FILE FUNCTIONS */
@@ -110,54 +122,73 @@ async function create_session(user_id) {
 }
 
 async function get_session(user_id) {
+    console.count("Get");
     if (user_id == null) return null;
 
     const user_file_path = await get_user_file_path(user_id);
     if (!await files.exists(user_file_path)) return null;
+    console.count("Get");
 
     var user_file = await files.read(user_file_path);
     if (user_file === null) return null;
+    console.count("Get");
 
     const session_id = user_file.session;
     const valid = await check_session(session_id);
+    console.count("Get");
+    console.log(session_id);
 
     if (valid) return session_id;
+    console.count("Get");
 
     const success = await create_session(user_id);
     if (!success) return null;
+    console.count("Get");
 
     user_file = await files.read(user_file_path);
+    console.count("Get");
+    console.log(user_file);
 
     const new_session_id = user_file.session;
     const new_valid = await check_session(new_session_id);
+    console.count("Get");
+    console.log(new_session_id);
 
     if (valid) return new_session_id;
+    console.count("Get");
     return null;
 }
 
 async function check_session(session_id) {
+    console.count("Check");
     if (session_id == null) return false;
 
     const session_file_path = await get_session_file_path(session_id);
     if (!files.exists(session_file_path)) return false;
+    console.count("Check");
 
     var session_file = await files.read(session_file_path);
     if (session_file === null) return false;
+    console.count("Check");
 
     const user_id = session_file.user_id;
     if (user_id == null) return false;
+    console.count("Check");
     
     const user_file_path = await get_user_file_path(user_id);
     if (!await files.exists(user_file_path)) return null;
+    console.count("Check");
     var user_file = await files.read(user_file_path);
 
     const expiry = user_file.expiry;
     if (expiry == null) return false;
+    console.count("Check");
     
     if (await has_expired(expiry)) {
-        await delete_session(session_id);
+        // await delete_session(session_id);
         return false;
     }
+    console.count("Check");
 
     return true;
 }
@@ -225,7 +256,7 @@ async function login(username, password) {
     if (!bcrypt.compare(password, hash)) return false;
 
     const old_session = user_data.session;
-    if (old_session != null) await delete_session(session_id);
+    if (old_session != null) await delete_session(old_session);
 
     const session_result = await create_session(user_id);
     if (!session_result) return false;
@@ -235,13 +266,46 @@ async function login(username, password) {
 
 /* DEVELOPMENT FUNCTIONS */
 
-async function run() {
-    const user_id = await get_user_id("hello");
-    const result = await create_session(user_id);
-    console.log("Creating session for " + user_id + ": " + result); 
+async function dregister() {
+    const register_result = await register("hello", "world");
+    console.log("Register " + register_result);
+}
 
-    // const session_id = await get_session(user_id);
-    // console.log("Session ID: " + session_id);
+async function dlogin() {
+    const login_result = await login("hello", "world");
+    console.log("Login " + login_result);
+}
+
+async function duser() {
+    const user_id = await get_user_id("hello");
+    console.log("User ID: " + user_id);
+    return user_id;
+}
+
+async function dcheck() {
+    const session_id = "0936b522-8d63-4e30-80d0-ae4c0dc39c8c";
+    const session_validity = await check_session(session_id);
+    console.log("Session Valid: " + session_validity);
+}
+
+async function dcreate() {
+    const user_id = "b8592813-16e0-4b17-9967-61c57ec602e3";
+    const session_success = await create_session(user_id);
+    console.log("Create Success: " + session_success);
+}
+
+async function dget() {
+    const session_id = await get_session(user_id);
+    console.log("Session ID: " + session_id);
+}
+
+async function run() {
+    await init();   
+
+    await dcheck();
 }
 
 run();
+
+
+// UNCOMMENT 118 DELETE TEMPORARY ONLY

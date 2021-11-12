@@ -298,7 +298,22 @@ async function modify_username(user_id, new_username) {
 }
 
 async function modify_password(user_id, new_password) {
+    if (user_id == null || new_password == null) return false;
 
+    const user_file = await init_user_file(user_id);
+    if (user_file == null) return false;
+
+    // Check if passwords are the same
+    if (await bcrypt.compare(new_password, user_file.json.hash)) {
+        await files.close(user_file);
+        return false;
+    }
+
+    const new_hash = await bcrypt.hash(new_password, rounds);
+    user_file.json.hash = new_hash;
+    await files.save(user_file);
+
+    return true;
 }
 
 module.exports = {
@@ -315,7 +330,7 @@ module.exports = {
         "delete": delete_account,
         "modify": {
             "username": modify_username,
-            "password": undefined
+            "password": modify_password
         }
     },
     "get": {
@@ -325,10 +340,3 @@ module.exports = {
         }
     }
 }
-
-async function run() {
-    const result = await modify_username("046d6a82-4b72-4816-8610-08fd934e9c33","world");
-    console.log(result);
-}
-
-run();

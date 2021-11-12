@@ -61,10 +61,12 @@ async function init(filename) {
 }
 
 async function read(filename) {
+    if (filename == null) return false;
+    
     var file = {
         path: await get_path(filename)
     }
-
+    
     if (!await exists(file.path)) return null;
 
     file.content = await fp.readFile(file.path);

@@ -1,4 +1,4 @@
-const files = require("../file.js");
+const files = require("../files/file.js");
 const uuid = require("uuid");
 
 const bcrypt = require("bcrypt-promise");
@@ -81,11 +81,16 @@ async function set_user_id(username, user_id) {
 }
 
 async function get_user_name(user_id) {
+    console.count("Get");
     if (user_id == null) return null;
-    const user_data_path = await get_user_file_path(user_id);
-    const user_data = await files.read(user_data_path);
+    console.count("Get");
+    const user_data = await files.read(
+        await get_user_file_path(user_id)
+    );
+    console.count("Get");
     if (user_data == null) return null;
-
+    console.count("Get");
+    return user_data.username;
 }
 
 /* SESSION FUNCTIONS */
@@ -253,6 +258,31 @@ async function login(username, password) {
 
 /* ACCOUNT FUNCTIONS */
 
+async function delete_account(user_id) {
+    if (user_id == null) return false;
+
+    const user_file_path = await get_user_file_path(user_id);
+    const user_data = await files.read(user_file_path);
+    if (user_data == null) return false;
+    // If username isn't set, user doesn't exist
+    if (user_data.username == null) return false;
+
+    if (user_data.session != null) await delete_session(user_data.session);
+    
+    await files.delete_file(user_file_path);
+    await set_user_id(user_data.username, undefined);
+
+    return true;
+}
+
+async function modify_username(user_id, new_username) {
+
+}
+
+async function modify_password(user_id, new_password) {
+
+}
+
 module.exports = {
     "entry": {
         "login": login,
@@ -266,14 +296,21 @@ module.exports = {
     "account": {
         "delete": undefined,
         "modify": {
-            "username": undefined
+            "username": undefined,
             "password": undefined
         }
     },
     "get": {
         "user": {
             "id": get_user_id,
-            "name": undefined
+            "name": get_user_name
         }
     }
 }
+
+async function run() {
+    const result = await get_user_name("b8592813-16e0-4b17-9967-61c57ec602e3");
+    console.log(result);
+}
+
+run();

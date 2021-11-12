@@ -52,6 +52,7 @@ async function get_session_file_path(id) {
 async function init_user_file(id) {
     const user_file_path = await get_user_file_path(id);
     if (!await files.exists(user_file_path)) return null;
+    console.log(user_file_path);
     return await files.init(user_file_path);
 }
 
@@ -73,31 +74,48 @@ async function set_user_id(username, user_id) {
 
 /* SESSION FUNCTIONS */
 async function create_session(user_id) {
+    console.count("Create");
     if (user_id == null) return false;
 
-    var user_file = await init_user_file(user_id);
-    if (user_file === null) return false;
+    const user_file_path = await get_user_file_path(user_id);
+    if (!files.exists(user_file_path)) return false;
+    console.count("Create");
+    var user_data = await files.read(user_file_path);
+    if (user_data === null) return false;
+    console.count("Create");
 
     // Check if user exists
-    if (user_file.json.username === null) return false;
+    if (user_data.username === null) return false;
+    console.count("Create");
 
     // If session already exists, invalidate it
-    const old_session = user_file.json.session;
+    const old_session = user_data.session;
     if (old_session !== null) await delete_session(old_session);
+    console.count("Create");
+
+    // Previous user file was read only to prevent collision with delete_session function.
+    var user_file = await init_user_file(user_id);
+    if (user_file === null) {
+        return false; 
+    }
+    console.count("Create");
 
     // Generate session id
     const session_id = uuid.v4();
     user_file.json.session = session_id;
-    user_file.json.expiry = await now();
+    user_file.json.expiry = await get_expiry();
+    console.count("Create");
     
-    const session_file_path = await get_session_file_path(user_id);
+    const session_file_path = await get_session_file_path(session_id);
     if (await files.exists(session_file_path)) return null;
     var session_file = await files.init(session_file_path);
     if (session_file === null) return false;
+    console.count("Create");
 
     session_file.json.user_id = user_id;
     await files.save(session_file);
     await files.save(user_file);
+    console.count("Create");
 
     return true;
 }
@@ -107,11 +125,16 @@ async function get_session(user_id) {
 
     const user_file_path = await get_user_file_path(user_id);
     if (!await files.exists(user_file_path)) return null;
+
     var user_file = await files.read(user_file_path);
+    if (user_file === null) return null;
+
+    console.log(user_file);
 
     const session_id = user_file.session;
     const valid = await check_session(session_id);
 
+    console.log("Current session id is valid: " + valid);
     if (valid) return session_id;
 
     const success = await create_session(user_id);
@@ -119,7 +142,7 @@ async function get_session(user_id) {
 
     user_file = await files.read(user_file_path);
 
-    const new_session_id = user_file.json.session;
+    const new_session_id = user_file.session;
     const new_valid = await check_session(new_session_id);
 
     if (valid) return new_session_id;
@@ -138,15 +161,17 @@ async function check_session(session_id) {
     const user_id = session_file.user_id;
     if (user_id == null) return false;
     
-    const user_file_path = await get_user_file_path(id);
+    const user_file_path = await get_user_file_path(user_id);
     if (!await files.exists(user_file_path)) return null;
     var user_file = await files.read(user_file_path);
 
+    console.log(user_file);
+
     const expiry = user_file.expiry;
     if (expiry == null) return false
-
-    const has_expired = await has_expired(expiry);
-    if (has_expired) {
+    
+    if (await has_expired(expiry)) {
+        console.log("Previous session has expired, creating new")
         await delete_session(session_id);
         return false;
     }
@@ -170,8 +195,8 @@ async function delete_session(session_id) {
     if (user_file === null) return false;
 
     if (user_file.json.session === session_id) {
-        user_file.json.session = null;
-        user_file.json.expiry = null;
+        user_file.json.session = undefined;
+        user_file.json.expiry = undefined;
         await files.save(user_file);
     } else {
         await files.close(user_file);
@@ -233,7 +258,7 @@ async function run() {
     console.log("Creating session for " + user_id + ": " + result); 
 
     const session_id = await get_session(user_id);
-    console.log(session_id);
+    console.log("Session ID: " + session_id);
 }
 
 run();

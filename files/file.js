@@ -63,12 +63,14 @@ async function init(filename) {
 
 async function read(filename) {
     var file = {
-        path: await get_path(filename),
-        content: "{}",
-        json: {}
+        path: await get_path(filename)
     }
 
-    var file = await reload(file);
+    if (!await exists(file.path)) return null;
+
+    file.content = await fp.readFile(file.path);
+    file.json = JSON.parse(file.content);
+    
     return file.json;
 }
 
@@ -87,7 +89,11 @@ async function reload(file) {
 
 async function delete_file(filename) {
     const path = await get_path(filename);
+    console.log("DELETING: " + path);
     if (open_files.has(path)) return false;
+    console.log("success");
+    await fp.rm(path);
+    return true;
 }
 
 async function save(file) {

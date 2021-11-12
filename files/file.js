@@ -2,12 +2,12 @@ const fs = require('fs');
 const fp = fs.promises;
 const dirname = require('path');
 
-var open_files = new Set();
+let open_files = new Set();
 
 async function get_path(filename) {
-    var path = __dirname.split("/");
+    let path = __dirname.split('/');
     path.splice(path.length - 1);
-    return path.join("/") + "/data/" + filename;
+    return path.join('/') + '/data/' + filename;
 }
 
 async function try_open(path) {
@@ -50,20 +50,20 @@ async function init(filename) {
     const file_path = await get_path(filename);
     if (!(await try_open(file_path))) return null;
 
-    var file = {
+    let file = {
         path: file_path,
-        content: "{}",
+        content: '{}',
         json: {}
     }
 
-    var file = await reload(file);
+    file = await reload(file);
     return file;
 }
 
 async function read(filename) {
     if (filename == null) return false;
     
-    var file = {
+    let file = {
         path: await get_path(filename)
     }
     
@@ -76,7 +76,7 @@ async function read(filename) {
 }
 
 async function reload(file) {
-    var file_exists = await exists(file.path);
+    let file_exists = await exists(file.path);
 
     if (!file_exists) {
         await save(file);

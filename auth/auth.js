@@ -1,38 +1,59 @@
 const files = require('../files/file');
+
 const crypto = require('crypto');
-
 const bcrypt = require('bcrypt-promise');
-const ROUNDS = 10;
 
-// Session length in ms (Default: 1 hour)
-const SESSION_LENGTH = 60 * 60 * 1000;
+const BCRYPT_ROUNDS = 10;
+const SESSION_LENGTH_MS = 60 * 60 * 1000;
+const USER_MAP_FILE_PATH = 'users.json';
 
-async function init() {
-    // Open and close users.json file to verify that file exists to allow reading of file later, without writing.
-    let users_file = await files.init('users.json');
-    await files.close(users_file);
+const now = async () => Date.now();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getExpiry = async () => ((await now()) + SESSION_LENGTH_MS);
+const hasExpired = async (timestamp) => ((await now()) > timestamp);
+
+const uuid = async () => crypto.randomUUID();
+
+const getUserFilePath = async (userID) => 'users/$(userID).json';
+const getSessionFilePath = async (sessionID) => 'sessions/$(sessionID).json';
+
+async function getUserFile(userID, create=false) {
+    const userFilePath = await getUserFilePath(userID);
+    if (!create && !await files.exists(userFilePath)) return null;
+    return await files.init(userFilePath);
 }
 
-/* TIME FUNCTIONS */
-async function now() {
-    return (+ new Date());
+async function getUserData(userID) {
+    const userFilePath = await getUserFilePath(userID);
+    if (!await files.exists(userFilePath)) return null;
+    return await files.read(userFilePath);
 }
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+async function getSessionFile(sessionID, create=false) {
+    const sessionFilePath = await getSessionFilePath(userID);
+    if (!create && !await files.exists(sessionFilePath)) return null;
+    return await files.init(sessionFilePath);
 }
 
-async function has_expired(check) {
-    const cur = await now();
-    const result = check < cur;
-    return result;
+async function getSessionData(sessionID) {
+    const sessionFilePath = await getSessionFilePath(userID);
+    if (!await files.exists(sessionFilePath)) return null;
+    return await files.read(sessionFilePath);
 }
 
-async function get_expiry() {
-    return (await now()) + SESSION_LENGTH;
+async function getMapData() {
+    if (!await files.exists(USER_MAP_FILE_PATH)) {
+        const userFile = await getMapFile();
+        await files.close(userFile);
+        return userFile.json;
+    }
+
+    return await files.read(USER_MAP_FILE_PATH);
 }
 
-// Attempt function used for registering. Required in case of concurrent modification of the user-id map file.
+const getMapFile () => await files.init(USER_MAP_FILE_PATH);
+
 async function attempt(target, delay, limit, args) {
     let attempt = 0;
     while (attempt < limit) {
@@ -45,176 +66,132 @@ async function attempt(target, delay, limit, args) {
     return false;
 }
 
-// Function to get random uuid
-async function uuid() {
-    return crypto.randomUUID();
+async function getUserID(username) {
+    if (username == null) return null;
+
+    const mapData = await getMapData();
+    if (mapData == null) return null;
+    return registerJSON[username];
 }
 
-/* PATH & FILE FUNCTIONS */
+async function setUserID(username, userID) {
+    if (username == null || userID == null) return false;
 
-async function get_user_file_path(id) {
-    return 'users/' + id + '.json';
-}
+    const mapFile = await getMapFile();
+    if (mapFile == null) return false;
+    mapFile.json[username] = userID;
+    await files.save(mapFile);
 
-async function get_session_file_path(id) {
-    return 'sessions/' + id + '.json'
-}
-
-async function init_user_file(id) {
-    const user_file_path = await get_user_file_path(id);
-    if (!await files.exists(user_file_path)) return null;
-    return await files.init(user_file_path);
-}
-
-
-/* USER ID FUNCTIONS */
-
-async function get_user_id(username) {
-    if (username == null) return false;
-    const register_json = await files.read('users.json');
-    try {
-        return register_json[username];
-    } catch {
-        return null;
-    }
-}
-
-async function set_user_id(username, user_id) {
-    const register_file = await files.init('users.json');
-    if (register_file == null) return false;
-    register_file.json[username] = user_id;
-    await files.save(register_file);
     return true;
 }
 
-async function get_user_name(user_id) {
-    if (user_id == null) return null;
+async function getUserName(userID) {
+    if (userID == null) return null;
     
-    const user_data = await files.read(
-        await get_user_file_path(user_id)
-    );
-    if (user_data == null) return null;
-    
-    return user_data.username;
+    const userData = await getUserData(userID);
+    if (userData == null) return null;
+
+    return userData.username;
 }
 
 /* SESSION FUNCTIONS */
 
-async function create_session(user_id) {
-    if (user_id == null) return false;
-
-    const user_file_path = await get_user_file_path(user_id);
-    if (!files.exists(user_file_path)) return false;
-    let user_data = await files.read(user_file_path);
-    if (user_data == null) return false;
+async function createSession(userID) {
+    if (userID == null) return false;
+    
+    let userData = await getUserData(userID);
+    if (userData == null) return false;
 
     // Check if user exists
-    if (user_data.username == null) return false;
+    if (userData.username == null) return false;
 
     // If session already exists, invalidate it
-    const old_session = user_data.session;
-    if (old_session != null) {
-        const r = await delete_session(old_session);
-    };
+    if (userData.session != null) {
+        await deleteSession(userData.session);
+    }
 
-    // Previous user file was read only to prevent collision with delete_session function.
-    let user_file = await init_user_file(user_id);
-    if (user_file == null) return false;
+    // Previous user file was read only to prevent collision with deleteSession function.
+    let userFile = await getUserFile(userID);
+    if (userFile == null) return false;
 
     // Generate session id
-    const session_id = uuid();
-    user_file.json.session = session_id;
-    user_file.json.expiry = await get_expiry();
+    userFile.json.session = await uuid();
+    userFile.json.expiry = await getExpiry();
     
-    const session_file_path = await get_session_file_path(session_id);
-    if (await files.exists(session_file_path)) return null;
-    let session_file = await files.init(session_file_path);
-    if (session_file == null) return false;
+    let sessionFile = await getSessionFile(sessionID);
+    if (sessionFile == null) return false;
 
-    session_file.json.user_id = user_id;
-    await files.save(session_file);
-    await files.save(user_file);
+    sessionFile.json.userID = userID;
+    await files.save(sessionFile);
+    await files.save(userFile);
 
     return true;
 }
 
-async function get_session(user_id) {
-    if (user_id == null) return null;
+async function getSession(userID) {
+    if (userID == null) return null;
 
-    const user_file_path = await get_user_file_path(user_id);
-    if (!await files.exists(user_file_path)) return null;
+    const userData = await getUserData(userID);
+    if (userData == null) return null;
+    
+    const valid = await checkSession(userData.session);
+    if (valid) return sessionID;
 
-    let user_file = await files.read(user_file_path);
-    if (user_file == null) return null;
+    // If stored session is valid, return it, otherwise create a new session.
 
-    const session_id = user_file.session;
-    const valid = await check_session(session_id);
+    const createSuccess = await createSession(userID);
+    if (!createSuccess) return null;
 
-    if (valid) return session_id;
+    const newUserData = await getUserData(userID);
+    if (newUserData == null) return null;
 
-    const success = await create_session(user_id);
-    if (!success) return null;
+    const newValid = await checkSession(userFile.session);
+    if (newValid) return userFile.session;
 
-    user_file = await files.read(user_file_path);
-
-    const new_session_id = user_file.session;
-    const new_valid = await check_session(new_session_id);
-    if (valid) return new_session_id;
     return null;
 }
 
-async function check_session(session_id) {
-    if (session_id == null) return false;
+async function checkSession(sessionID) {
+    if (sessionID == null) return false;
 
-    const session_file_path = await get_session_file_path(session_id);
-    if (!files.exists(session_file_path)) return false;
+    let sessionData = await getSessionData(sessionID);
+    if (sessionData == null) return false;
 
-    let session_file = await files.read(session_file_path);
-    if (session_file == null) return false;
+    const userData = await getUserData(sessionData.userID);
+    if (userData == null) return false;
 
-    const user_id = session_file.user_id;
-    if (user_id == null) return false;
+    if (userData.expiry == null) return false;
     
-    const user_file_path = await get_user_file_path(user_id);
-    if (!await files.exists(user_file_path)) return null;
-    let user_file = await files.read(user_file_path);
-
-    const expiry = user_file.expiry;
-    if (expiry == null) return false;
-    
-    if (await has_expired(expiry)) {
-        await delete_session(session_id);
+    if (await has_expired(userData.expiry)) {
+        await deleteSession(sessionID);
         return false;
     }
 
     return true;
 }
 
-async function delete_session(session_id) {
-    if (session_id == null) return false;
+async function deleteSession(sessionID) {
+    if (sessionID == null) return false;
+    
+    const sessionData = await getSessionData(sessionID);
+    if (sessionData == null) return false;
 
-    const session_file_path = await get_session_file_path(session_id);
-    if (!files.exists(session_file_path)) return false;
+    if (sessionFile.userID == null) return false;
 
-    let session_file = await files.read(session_file_path);
-    if (session_file == null) return false;
+    const userData = await getUserData(sessionFile.userID);
+    if (userData == null) return false;
+    if (userData.session !== sessionID) return false;
 
-    const user_id = session_file.user_id;
-    if (user_id == null) return false;
+    const userFile = await getUserFile(sessionFile.userID);
+    if (userFile == null) return false;
 
-    const user_file = await init_user_file(user_id);
-    if (user_file == null) return false;
+    userFile.json.session = undefined;
+    userFile.json.expiry = undefined;
 
-    if (user_file.json.session == session_id) {
-        user_file.json.session = undefined;
-        user_file.json.expiry = undefined;
-        await files.save(user_file);
-    } else {
-        await files.close(user_file);
-        return false;
-    }
-
-    await files.delete_file(session_file_path);
+    await files.save(userFile);
+    await files.delete_file(
+        await getSessionFilePath(sessionID)
+    );
 
     return true;
 }
@@ -222,40 +199,47 @@ async function delete_session(session_id) {
 /* PUBLIC AUTH FUNCTIONS */
 
 async function register(username, password) {
-    if (await get_user_id(username) != null) return false;
+    if (username == null || password == null) return false;
 
-    const user_id = uuid();
-    const user_data = await files.init(await get_user_file_path(user_id));
+    // If user already exists, exit
+    if (await getUserID(username) != null) return false;
 
-    if (user_data == null) return false;
-    if (user_data.content !== '{}') return false;
+    const userID = uuid();
+    const userFile = await getUserFile(userID, true);
+    if (userFile == null) return false;
+    if (userFile.content !== '{}') return false;
 
-    user_data.json = {
+    userFile.json = {
         username: username,
-        hash: await bcrypt.hash(password, ROUNDS)
+        hash: await bcrypt.hash(password, BCRYPT_ROUNDS)
     };
 
-    await files.save(user_data);
-    const result = await attempt(set_user_id, 1000, 5, [username, user_id]);
+    await files.save(userFile);
 
-    return result;
+    const mapResult =  await attempt(setUserID, 200, 10, [username, userID]);
+
+    if (!mapResult) {
+        console.error("Unable to map user registration for $(userID) due to concurrent modifications");
+    }
+
+    return false;
 }
 
 async function login(username, password) {
     // Check if user exists
-    const user_id = await get_user_id(username);
-    if (user_id == null) return false;
+    const userID = await getUserID(username);
+    if (userID == null) return false;
 
     // Check if password is correct
-    const user_path = await get_user_file_path(user_id);
-    const user_data = await files.read(user_path);
-    const hash = user_data.hash;
+    const userPath = await getUserFilePath(userID);
+    const userData = await files.read(userPath);
+    const hash = userData.hash;
     if (!bcrypt.compare(password, hash)) return false;
 
-    const old_session = user_data.session;
-    if (old_session != null) await delete_session(old_session);
+    const oldSession = userData.session;
+    if (oldSession != null) await deleteSession(oldSession);
 
-    const session_result = await create_session(user_id);
+    const session_result = await createSession(userID);
     if (!session_result) return false;
 
     return true;
@@ -263,65 +247,69 @@ async function login(username, password) {
 
 /* ACCOUNT FUNCTIONS */
 
-async function delete_account(user_id) {
-    if (user_id == null) return false;
+async function delete_account(userID) {
+    if (userID == null) return false;
 
-    const user_file_path = await get_user_file_path(user_id);
-    const user_data = await files.read(user_file_path);
-    if (user_data == null) return false;
+    const userFilePath = await getUserFilePath(userID);
+    const userData = await files.read(userFilePath);
+    if (userData == null) return false;
     // If username isn't set, user doesn't exist
-    if (user_data.username == null) return false;
+    if (userData.username == null) return false;
 
-    if (user_data.session != null) await delete_session(user_data.session);
+    if (userData.session != null) await deleteSession(userData.session);
     
-    await files.delete_file(user_file_path);
-    await set_user_id(user_data.username, undefined);
+    await files.delete_file(userFilePath);
+    await setUserID(userData.username, undefined);
 
     return true;
 }
 
-async function modify_username(user_id, new_username) {
-    if (user_id == null || new_username == null) return false;
+async function modify_username(userID, newUsername) {
+    if (userID == null || newUsername == null) return false;
 
     // If user with that name already exists, exit
-    if ((await get_user_id(new_username)) != null) return false;
+    if ((await getUserID(newUsername)) != null) return false;
 
-    const user_file = await init_user_file(user_id);
-    if (user_file == null) return false;
+    const userFile = await initialiseUserFile(userID);
+    if (userFile == null) return false;
 
-    if (user_file.json.username === new_username) {
-        await files.close(user_file);
+    if (userFile.json.username === newUsername) {
+        await files.close(userFile);
         return false;
     }
 
-    await set_user_id(user_file.json.username, undefined);
+    await setUserID(userFile.json.username, undefined);
 
-    user_file.json.username = new_username;
-    await files.save(user_file);
+    userFile.json.username = newUsername;
+    await files.save(userFile);
 
-    await set_user_id(new_username, user_id);
+    await setUserID(newUsername, userID);
 
     return true;
 }
 
-async function modify_password(user_id, new_password) {
-    if (user_id == null || new_password == null) return false;
+async function modify_password(userID, newPassword) {
+    if (userID == null || newPassword == null) return false;
 
-    const user_file = await init_user_file(user_id);
-    if (user_file == null) return false;
+    const userFile = await initialiseUserFile(userID);
+    if (userFile == null) return false;
 
     // Check if passwords are the same
-    if (await bcrypt.compare(new_password, user_file.json.hash)) {
-        await files.close(user_file);
+    if (await bcrypt.compare(newPassword, userFile.json.hash)) {
+        await files.close(userFile);
         return false;
     }
 
-    const new_hash = await bcrypt.hash(new_password, ROUNDS);
-    user_file.json.hash = new_hash;
-    await files.save(user_file);
+    const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    userFile.json.hash = newHash;
+    await files.save(userFile);
 
     return true;
 }
+
+files.init('users.json').then(
+    (userFile) => files.close(userFile)
+);
 
 module.exports = {
     entry: {
@@ -329,9 +317,9 @@ module.exports = {
         register: register
     },
     session: {
-        fetch: get_session,
-        remove: delete_session,
-        verify: check_session
+        fetch: getSession,
+        remove: deleteSession,
+        verify: checkSession
     },
     account: {
         remove: delete_account,
@@ -342,8 +330,8 @@ module.exports = {
     },
     fetch: {
         user: {
-            id: get_user_id,
-            name: get_user_name
+            id: getUserID,
+            name: getUserName
         }
     }
 }

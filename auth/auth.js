@@ -290,17 +290,16 @@ async function modify_username(userID, newUsername) {
 async function modify_password(userID, newPassword) {
     if (userID == null || newPassword == null) return false;
 
-    const userFile = await initialiseUserFile(userID);
-    if (userFile == null) return false;
+    const userData = await getUserData(userID);
+    if (userData == null) return false;
 
     // Check if passwords are the same
-    if (await bcrypt.compare(newPassword, userFile.json.hash)) {
-        await files.close(userFile);
-        return false;
-    }
+    if (await bcrypt.compare(newPassword, userData.hash)) return false;
 
-    const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-    userFile.json.hash = newHash;
+    const userFile = await getUserFile(userID);
+    if (userFile == null) return false;
+
+    userFile.json.hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     await files.save(userFile);
 
     return true;

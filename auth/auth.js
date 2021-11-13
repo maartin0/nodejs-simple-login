@@ -1,4 +1,4 @@
-const files = require('../files/file');
+const files = require('../file');
 
 const crypto = require('crypto');
 const bcrypt = require('bcrypt-promise');
@@ -310,34 +310,24 @@ async function modify_password(userID, newPassword) {
 module.exports = {
     entry: {
         login: login,
-        register: register
+        register: register,
     },
     session: {
         fetch: getSession,
         remove: deleteSession,
-        verify: checkSession
+        verify: checkSession,
     },
     account: {
         remove: deleteAccount,
         modify: {
             username: modify_username,
-            password: modify_password
-        }
+            password: modify_password,
+        },
     },
     fetch: {
         user: {
             id: getUserID,
-            name: getUserName
-        }
+            name: getUserName,
+        },
     }
 }
-
-async function run() {
-    const user_id = await getUserID("user");
-    const session = "21efe447-f17c-4ab5-aa3b-9d7eb0dbd036";
-
-    const result = await login("user", "password");
-    console.log(result);
-}
-
-run();

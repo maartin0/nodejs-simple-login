@@ -1,5 +1,4 @@
 const fs = require('fs').promises;
-const dirname = require('path');
 
 const openFiles = new Set();
 
@@ -35,9 +34,7 @@ async function fileExists(filename) {
 
 async function pathExists(path) {
     try {
-        await fs.access(
-            path
-        );
+        await fs.access(path);
         return true;
     } catch {
         return false;

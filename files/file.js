@@ -1,32 +1,31 @@
-const fs = require('fs');
-const fp = fs.promises;
+const fs = require('fs').promises;
 const dirname = require('path');
 
-let open_files = new Set();
+const openFiles = new Set();
 
-async function get_path(filename) {
-    let path = __dirname.split('/');
+async function getPath(filename) {
+    const path = __dirname.split('/');
     path.splice(path.length - 1);
     return path.join('/') + '/data/' + filename;
 }
 
-async function try_open(path) {
-    if (open_files.has(path)) {
+async function attemptOpen(path) {
+    if (openFiles.has(path)) {
         return false;
     } else {
-        open_files.add(path);
+        openFiles.add(path);
         return true;
     }
 }
 
 async function close(file) {
-    return open_files.delete(file.path);
+    return openFiles.delete(file.path);
 }
 
-async function ext_exists(filename) {
+async function fileExists(filename) {
     try {
-        await fp.access(
-            await get_path(filename)
+        await fs.access(
+            await getPath(filename)
         );
         return true;
     } catch {
@@ -34,9 +33,9 @@ async function ext_exists(filename) {
     }
 }
 
-async function exists(path) {
+async function pathExists(path) {
     try {
-        await fp.access(
+        await fs.access(
             path
         );
         return true;
@@ -45,68 +44,66 @@ async function exists(path) {
     }
 }
 
-
 async function init(filename) {
-    const file_path = await get_path(filename);
-    if (!(await try_open(file_path))) return null;
+    const filePath = await getPath(filename);
+    if (!(await attemptOpen(filePath))) return null;
 
-    let file = {
-        path: file_path,
+    const file = {
+        path: filePath,
         content: '{}',
         json: {}
     }
 
-    file = await reload(file);
-    return file;
+    return await reload(file);
 }
 
 async function read(filename) {
     if (filename == null) return false;
     
-    let file = {
-        path: await get_path(filename)
+    const file = {
+        path: await getPath(filename)
     }
     
-    if (!await exists(file.path)) return null;
+    if (!await pathExists(file.path)) return null;
 
-    file.content = await fp.readFile(file.path);
+    file.content = await fs.readFile(file.path);
     file.json = JSON.parse(file.content);
     
     return file.json;
 }
 
 async function reload(file) {
-    let file_exists = await exists(file.path);
+    const fileExists = await pathExists(file.path);
 
-    if (!file_exists) {
+    if (!fileExists) {
         await save(file);
     } else {
-        file.content = await fp.readFile(file.path);
+        file.content = await fs.readFile(file.path);
         file.json = JSON.parse(file.content);
     }
 
     return file;
 }
 
-async function delete_file(filename) {
-    const path = await get_path(filename);
-    if (open_files.has(path)) return false;
-    await fp.rm(path);
+async function remove(filename) {
+    const path = await getPath(filename);
+    if (openFiles.has(path)) return false;
+    await fs.rm(path);
     return true;
 }
 
 async function save(file) {
     file.content = JSON.stringify(file.json);
-    await fp.writeFile(file.path, file.content);
+    await fs.writeFile(file.path, file.content);
     await close(file);
 }
 
 module.exports = { 
-    init: init,
-    reload: reload,
-    save: save,
-    close: close,
-    read: read,
-    exists: ext_exists,
-    delete_file: delete_file
+    init,
+    reload,
+    save,
+    close,
+    read,
+    remove,
+    exists: fileExists,
 };

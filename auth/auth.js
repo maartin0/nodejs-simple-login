@@ -15,29 +15,33 @@ const hasExpired = async (timestamp) => ((await now()) > timestamp);
 
 const uuid = async () => crypto.randomUUID();
 
-const getUserFilePath = async (userID) => 'users/$(userID).json';
-const getSessionFilePath = async (sessionID) => 'sessions/$(sessionID).json';
+const getUserFilePath = async (userID) => `users/${userID}.json`;
+const getSessionFilePath = async (sessionID) => `sessions/${sessionID}.json`;
 
 async function getUserFile(userID, create=false) {
+    if (userID == null) return null;
     const userFilePath = await getUserFilePath(userID);
     if (!create && !await files.exists(userFilePath)) return null;
     return await files.init(userFilePath);
 }
 
 async function getUserData(userID) {
+    if (userID == null) return null;
     const userFilePath = await getUserFilePath(userID);
     if (!await files.exists(userFilePath)) return null;
     return await files.read(userFilePath);
 }
 
 async function getSessionFile(sessionID, create=false) {
-    const sessionFilePath = await getSessionFilePath(userID);
+    if (sessionID == null) return null;
+    const sessionFilePath = await getSessionFilePath(sessionID);
     if (!create && !await files.exists(sessionFilePath)) return null;
     return await files.init(sessionFilePath);
 }
 
 async function getSessionData(sessionID) {
-    const sessionFilePath = await getSessionFilePath(userID);
+    if (sessionID == null) return null;
+    const sessionFilePath = await getSessionFilePath(sessionID);
     if (!await files.exists(sessionFilePath)) return null;
     return await files.read(sessionFilePath);
 }
@@ -52,7 +56,7 @@ async function getMapData() {
     return await files.read(USER_MAP_FILE_PATH);
 }
 
-const getMapFile () => await files.init(USER_MAP_FILE_PATH);
+const getMapFile = async () => await files.init(USER_MAP_FILE_PATH);
 
 async function attempt(target, delay, limit, args) {
     let attempt = 0;
@@ -60,12 +64,12 @@ async function attempt(target, delay, limit, args) {
         const result = await target(...args);
         if (result === true) return true;
         if (result === null) break;
-        attempts += 1;
+        attempt += 1;
         await sleep(delay);
     }
 
     argString = args.join(", ");
-    console.error("Failed to run function $(target.name) with args $(argString).");
+    console.error(`Failed to run function ${target.name} with args ${argString}.`);
     return false;
 }
 
@@ -74,11 +78,11 @@ async function getUserID(username) {
 
     const mapData = await getMapData();
     if (mapData == null) return null;
-    return registerJSON[username];
+    return mapData[username];
 }
 
 async function setUserID(username, userID) {
-    if (username == null || userID == null) return false;
+    if (username == null) return false;
 
     const mapFile = await getMapFile();
     if (mapFile == null) return false;
@@ -102,26 +106,23 @@ async function getUserName(userID) {
 async function createSession(userID) {
     if (userID == null) return false;
     
-    let userData = await getUserData(userID);
+    const userData = await getUserData(userID);
     if (userData == null) return false;
 
     // Check if user exists
     if (userData.username == null) return false;
 
     // If session already exists, invalidate it
-    if (userData.session != null) {
-        await deleteSession(userData.session);
-    }
+    if (userData.session != null) await deleteSession(userData.session);
 
-    // Previous user file was read only to prevent collision with deleteSession function.
-    let userFile = await getUserFile(userID);
+    const userFile = await getUserFile(userID);
     if (userFile == null) return false;
 
-    // Generate session id
-    userFile.json.session = await uuid();
+    const sessionID = await uuid();
+    userFile.json.session = sessionID;
     userFile.json.expiry = await getExpiry();
-    
-    let sessionFile = await getSessionFile(sessionID);
+
+    const sessionFile = await getSessionFile(sessionID, true);
     if (sessionFile == null) return false;
 
     sessionFile.json.userID = userID;
@@ -157,7 +158,7 @@ async function getSession(userID) {
 async function checkSession(sessionID) {
     if (sessionID == null) return false;
 
-    let sessionData = await getSessionData(sessionID);
+    const sessionData = await getSessionData(sessionID);
     if (sessionData == null) return false;
 
     const userData = await getUserData(sessionData.userID);
@@ -165,7 +166,7 @@ async function checkSession(sessionID) {
 
     if (userData.expiry == null) return false;
     
-    if (await has_expired(userData.expiry)) {
+    if (await hasExpired(userData.expiry)) {
         await deleteSession(sessionID);
         return false;
     }
@@ -179,20 +180,20 @@ async function deleteSession(sessionID) {
     const sessionData = await getSessionData(sessionID);
     if (sessionData == null) return false;
 
-    if (sessionFile.userID == null) return false;
+    if (sessionData.userID == null) return false;
 
-    const userData = await getUserData(sessionFile.userID);
+    const userData = await getUserData(sessionData.userID);
     if (userData == null) return false;
     if (userData.session !== sessionID) return false;
 
-    const userFile = await getUserFile(sessionFile.userID);
+    const userFile = await getUserFile(sessionData.userID);
     if (userFile == null) return false;
 
     userFile.json.session = undefined;
     userFile.json.expiry = undefined;
 
     await files.save(userFile);
-    await files.delete_file(
+    await files.remove(
         await getSessionFilePath(sessionID)
     );
 
@@ -207,7 +208,7 @@ async function register(username, password) {
     // If user already exists, exit
     if (await getUserID(username) != null) return false;
 
-    const userID = uuid();
+    const userID = await uuid();
     const userFile = await getUserFile(userID, true);
     if (userFile == null) return false;
     if (userFile.content !== '{}') return false;
@@ -236,12 +237,14 @@ async function login(username, password) {
 
     if (userData.session != null) await deleteSession(userData.session);
 
-    return true;
+    const sessionResult = await createSession(userID);
+
+    return sessionResult;
 }
 
 /* ACCOUNT FUNCTIONS */
 
-async function delete_account(userID) {
+async function deleteAccount(userID) {
     if (userID == null) return false;
 
     const userData = await getUserData(userID);
@@ -252,8 +255,8 @@ async function delete_account(userID) {
 
     if (userData.session != null) await deleteSession(userData.session);
     
-    await files.delete_file(
-        await getUserFilePath(userID);
+    await files.remove(
+        await getUserFilePath(userID)
     );
 
     const mapResult = await attempt(setUserID, 200, 10, [userData.username, undefined]);
@@ -278,7 +281,6 @@ async function modify_username(userID, newUsername) {
 
     const removeResult = await attempt(setUserID, 200, 10, [userFile.json.username, undefined]);
     if (!removeResult) return false;
-
     userFile.json.username = newUsername;
     await files.save(userFile);
 
@@ -316,7 +318,7 @@ module.exports = {
         verify: checkSession
     },
     account: {
-        remove: delete_account,
+        remove: deleteAccount,
         modify: {
             username: modify_username,
             password: modify_password
@@ -329,3 +331,13 @@ module.exports = {
         }
     }
 }
+
+async function run() {
+    const user_id = await getUserID("user");
+    const session = "21efe447-f17c-4ab5-aa3b-9d7eb0dbd036";
+
+    const result = await login("user", "password");
+    console.log(result);
+}
+
+run();

@@ -59,10 +59,13 @@ async function attempt(target, delay, limit, args) {
     while (attempt < limit) {
         const result = await target(...args);
         if (result === true) return true;
-        if (result === null) return false;
+        if (result === null) break;
         attempts += 1;
         await sleep(delay);
     }
+
+    argString = args.join(", ");
+    console.error("Failed to run function $(target.name) with args $(argString).");
     return false;
 }
 
@@ -216,31 +219,22 @@ async function register(username, password) {
 
     await files.save(userFile);
 
-    const mapResult =  await attempt(setUserID, 200, 10, [username, userID]);
-
-    if (!mapResult) {
-        console.error("Unable to map user registration for $(userID) due to concurrent modifications");
-    }
-
-    return false;
+    return await attempt(setUserID, 200, 10, [username, userID]);
 }
 
 async function login(username, password) {
-    // Check if user exists
+    if (username == null || password == null) return false;
+
     const userID = await getUserID(username);
     if (userID == null) return false;
 
     // Check if password is correct
-    const userPath = await getUserFilePath(userID);
-    const userData = await files.read(userPath);
+    const userData = await getUserData(userID);
     const hash = userData.hash;
+
     if (!bcrypt.compare(password, hash)) return false;
 
-    const oldSession = userData.session;
-    if (oldSession != null) await deleteSession(oldSession);
-
-    const session_result = await createSession(userID);
-    if (!session_result) return false;
+    if (userData.session != null) await deleteSession(userData.session);
 
     return true;
 }
@@ -250,42 +244,47 @@ async function login(username, password) {
 async function delete_account(userID) {
     if (userID == null) return false;
 
-    const userFilePath = await getUserFilePath(userID);
-    const userData = await files.read(userFilePath);
+    const userData = await getUserData(userID);
     if (userData == null) return false;
-    // If username isn't set, user doesn't exist
+
+    // Check if user exists
     if (userData.username == null) return false;
 
     if (userData.session != null) await deleteSession(userData.session);
     
-    await files.delete_file(userFilePath);
-    await setUserID(userData.username, undefined);
+    await files.delete_file(
+        await getUserFilePath(userID);
+    );
 
-    return true;
+    const mapResult = await attempt(setUserID, 200, 10, [userData.username, undefined]);
+
+    return mapResult;
 }
 
 async function modify_username(userID, newUsername) {
     if (userID == null || newUsername == null) return false;
 
     // If user with that name already exists, exit
-    if ((await getUserID(newUsername)) != null) return false;
+    if (await getUserID(newUsername) != null) return false;
 
-    const userFile = await initialiseUserFile(userID);
+    const userData = await getUserData(userID);
+    if (userData == null) return false;
+
+    // Exit if username isn't different
+    if (userData.username === newUsername) return false;
+
+    const userFile = await getUserFile(userID);
     if (userFile == null) return false;
 
-    if (userFile.json.username === newUsername) {
-        await files.close(userFile);
-        return false;
-    }
-
-    await setUserID(userFile.json.username, undefined);
+    const removeResult = await attempt(setUserID, 200, 10, [userFile.json.username, undefined]);
+    if (!removeResult) return false;
 
     userFile.json.username = newUsername;
     await files.save(userFile);
 
-    await setUserID(newUsername, userID);
+    const addResult = await attempt(setUserID, 200, 10, [newUsername, userID]);
 
-    return true;
+    return addResult;
 }
 
 async function modify_password(userID, newPassword) {
@@ -306,10 +305,6 @@ async function modify_password(userID, newPassword) {
 
     return true;
 }
-
-files.init('users.json').then(
-    (userFile) => files.close(userFile)
-);
 
 module.exports = {
     entry: {

@@ -1,38 +1,34 @@
 const express = require('express');
+const handlebars = require('express-handlebars');
+const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
+
 const app = new express();
 const port = 80;
 
 // ----------------------------------------------------
 
-app.use(express.static(__dirname + "/client/static/"));
-app.set('views', __dirname + "/client/templates/");
+app.use(express.static(__dirname + '/client/static/'));
+app.set('views', __dirname + '/client/templates/');
+
+app.engine('handlebars', handlebars());
+app.set('view engine', 'handlebars');
 
 app.use(express.urlencoded());
 app.use(express.json());
 
-const exphbs  = require('express-handlebars');
-app.engine('handlebars', exphbs());
-app.set('view engine', 'handlebars');
-
-const cookieParser = require('cookie-parser');
 app.use(cookieParser());
-
-const csrf = require('csurf');
-app.use(csrf({ cookie: true }));
+app.use( csrf( { cookie: true } ) );
 
 // ----------------------------------------------------
 
-const auth = require("./auth/router.js");
-app.use("/", auth);
+const auth = require('./auth');
+app.use('/', auth);
 
 // ----------------------------------------------------
 
-app.get("/", function (request, response) {
-    response.render("index");
-})
-
-app.get("/login", function (request, response) {
-    response.render("login");
+app.get('/', function (request, response) {
+    response.render('index');
 })
 
 app.listen(port, () => {

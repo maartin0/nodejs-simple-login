@@ -118,9 +118,8 @@ async function submit() {
 
         if (input.name === "redirect") {
             redirect = input.value;
-        }
-
-        if (input.classList.contains("ignored")) {
+            continue;
+        } else if (input.classList.contains("ignored")) {
             continue;
         }
 

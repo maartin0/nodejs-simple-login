@@ -50,6 +50,10 @@ router.post('/auth/login', async function (request, response) {
     });
 });
 
+router.get('/register', async function (request, response) {
+    response.render('register', { csrfToken: request.csrfToken() });
+});
+
 router.post('/auth/register', async function (request, response) {
     const username = request.body.username;
     let userID = await auth.fetch.user.id(username);
@@ -92,17 +96,25 @@ router.post('/auth/register', async function (request, response) {
     });
 });
 
-router.get('/register', async function (request, response) {
-    response.render('register', { csrfToken: request.csrfToken() });
-});
-
 router.get('/logout', async function (request, response) {
     const sessionID = request.body.session;
     await auth.session.remove(sessionID);
     response.render('logout');
 });
 
+async function session(request, response, next) {
+    const result = await auth.session.verify(request.cookies.session);
+
+    if (!result) {
+        response.redirect("/login");
+        return;
+    }
+
+    next();
+}
+
 module.exports = {
     router,
-    auth
+    auth,
+    session
 }

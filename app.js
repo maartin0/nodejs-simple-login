@@ -27,7 +27,7 @@ app.use('/', auth.router);
 
 // ----------------------------------------------------
 
-app.get('/', function (request, response) {
+app.get('/', auth.session, function (request, response) {
     response.render('index');
 })
 

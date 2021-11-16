@@ -93,7 +93,13 @@ router.post('/auth/register', async function (request, response) {
 });
 
 router.get('/register', async function (request, response) {
-    response.render('register');
+    response.render('register', { csrfToken: request.csrfToken() });
+});
+
+router.get('/logout', async function (request, response) {
+    const sessionID = request.body.session;
+    await auth.session.remove(sessionID);
+    response.render('logout');
 });
 
 module.exports = {

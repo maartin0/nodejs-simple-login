@@ -110,7 +110,6 @@ async function createSession(userID) {
     const userData = await getUserData(userID);
     if (userData == null) return false;
 
-    await files.save(userFile);
     // Check if user exists
     if (userData.username == null) return false;
 
@@ -145,7 +144,7 @@ async function getSession(userID) {
     if (userData == null) return null;
     
     const valid = await checkSession(userData.session);
-    if (valid) return sessionID;
+    if (valid) return userData.session;
 
     // If stored session is valid, return it, otherwise create a new session.
 

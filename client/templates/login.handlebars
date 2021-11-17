@@ -2,7 +2,7 @@
 <link rel="stylesheet" type="text/css" href="/assets/style/form.css">
 
 <div class="form container">
-    <form action="/auth/login" method="post">
+    <form javascript_action="/auth/login" method="post">
         <h1 class="left">Login</h1>
         <section id="notifications" class="left"></section>
         
@@ -19,6 +19,7 @@
 
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <input type="hidden" class="ignored" name="redirect" value="/">
+        <input type="hidden" class="ignored" name="success" value="Redirecting...">
         <input class="field submit left ignored" name="submit" type="submit" value="Login">
     </form>
 </div>

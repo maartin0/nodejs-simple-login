@@ -14,11 +14,11 @@ app.set('views', __dirname + '/client/templates/');
 app.engine('handlebars', handlebars());
 app.set('view engine', 'handlebars');
 
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(cookieParser());
-app.use( csrf( { cookie: true } ) );
+app.use(csrf({ cookie: true }));
 
 // ----------------------------------------------------
 

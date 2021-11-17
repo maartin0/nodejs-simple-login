@@ -88,6 +88,7 @@ router.post('/auth/register', async function (request, response) {
 
     if (sessionID == null) {
         await sendError(response, UNKNOWN_ERROR);
+        return;
     }
 
     response.send({
@@ -97,9 +98,47 @@ router.post('/auth/register', async function (request, response) {
 });
 
 router.get('/logout', async function (request, response) {
-    const sessionID = request.body.session;
-    await auth.session.remove(sessionID);
+    const sessionID = request.cookies.session;
+    const result = await auth.session.remove(sessionID);
+
     response.render('logout');
+});
+
+router.get('/account', session, async function (request, response) {
+    const sessionID = request.cookies.session;
+    const userID = await auth.fetch.user.idFromSession(sessionID);
+    if (userID == null) request.redirect('/login');
+
+    const username = await auth.fetch.user.name(userID);
+    const email = await auth.fetch.user.email(userID);
+    
+    response.render('account', {username, email, csrfToken: request.csrfToken() });
+});
+
+router.post('/auth/account', session, async function (request, response) {
+    const sessionID = request.cookies.session;
+    const userID = await auth.fetch.user.idFromSession(sessionID);
+    if (userID == null) {
+        await sendError(response, UNKNOWN_ERROR);
+        return;
+    }
+
+    if (request.body.email !== "") {
+        const email = request.body.email;
+        // Check is email
+    }
+
+    const oldUsername = await auth.fetch.user.name(userID);    
+
+    if (request.body.username != null && request.body.username !== "" && request.body.username !== oldUsername) {
+        if (await auth.fetch.user.id(request.body.username) != null) {
+            await sendError(response, USER_ALREADY_EXISTS_ERROR);
+            return;
+        }
+        const username = request.body.username;
+    }
+
+
 });
 
 async function session(request, response, next) {
@@ -115,6 +154,5 @@ async function session(request, response, next) {
 
 module.exports = {
     router,
-    auth,
-    session
+    session,
 }

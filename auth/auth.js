@@ -263,7 +263,7 @@ async function deleteAccount(userID) {
     return await attempt(setUserID, 200, 10, [userData.username, undefined]);
 }
 
-async function modify_username(userID, newUsername) {
+async function modifyUsername(userID, newUsername) {
     if (userID == null || newUsername == null) return false;
 
     // If user with that name already exists, exit
@@ -281,7 +281,7 @@ async function modify_username(userID, newUsername) {
     return await attempt(setUserID, 200, 10, [newUsername, userID]);
 }
 
-async function modify_password(userID, newPassword) {
+async function modifyPassword(userID, newPassword) {
     if (userID == null || newPassword == null) return false;
 
     const userFile = await getUserFile(userID);
@@ -290,6 +290,36 @@ async function modify_password(userID, newPassword) {
     userFile.json.hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     await files.save(userFile);
 
+    return true;
+}
+
+async function getUserIDFromSession(sessionID) {
+    if (sessionID == null) return null;
+
+    const sessionData = await getSessionData(sessionID);
+    if (sessionData == null) return null;
+
+    return sessionData.userID;
+}
+
+async function getUserEmail(userID) {
+    if (userID == null) return null;
+
+    const userData = await getUserData(userID);
+    if (userData == null) return null;
+    
+    return userData.email;
+}
+
+async function setUserEmail(userID, email) {
+    if (userID == null) return false;
+
+    const userFile = await getUserFile(userID);
+    if (userFile == null) return false;
+
+    userFile.json.email = email;
+
+    await files.save(userFile);
     return true;
 }
 
@@ -306,14 +336,17 @@ module.exports = {
     account: {
         remove: deleteAccount,
         modify: {
-            username: modify_username,
-            password: modify_password,
+            username: modifyUsername,
+            password: modifyPassword,
+            email: setUserEmail,
         },
     },
     fetch: {
         user: {
             id: getUserID,
             name: getUserName,
+            email: getUserEmail,
+            idFromSession: getUserIDFromSession,
         },
     },
 }

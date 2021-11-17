@@ -110,6 +110,7 @@ async function submit() {
     var form = document.getElementsByTagName("form").item(0);
     var inputs = form.getElementsByTagName("input");
     var redirect = "";
+    var successMessage = "";
 
     var request_body = {};
 
@@ -119,22 +120,25 @@ async function submit() {
         if (input.name === "redirect") {
             redirect = input.value;
             continue;
-        } else if (input.classList.contains("ignored")) {
+        } else if (input.name === "success") {
+            successMessage = input.value;
             continue;
-        }
+        } else if (input.classList.contains("ignored")) continue;
 
         request_body[input.name] = input.value;
     }
 
     send_xhr(
-        form.getAttribute("action"), 
-        request_body, 
+        form.getAttribute("javascript_action"), 
+        request_body,
         function (result) {
-            // Runs on successful submit (e.g. login)
-            notify("Redirecting...", false);
-
+            // Success
             if ("session" in result) {
                 document.cookie = "session=" + result.session;
+            }
+
+            if (successMessage !== "") {
+                notify(successMessage, false);
             }
 
             if (redirect !== "") {
@@ -142,7 +146,7 @@ async function submit() {
             }
         }, 
         function (result) {
-            // Runs on not successful submit (e.g. incorrect password)
+            // Failure
             notify(result.info, true); 
         }
     );
@@ -155,9 +159,7 @@ async function submit_form(event) {
     var confirm_elements = document.getElementsByName("confirm");
     if (confirm_elements.length > 0) {
         var result = await check_confirmation();
-        if (!result) {
-            return;
-        }
+        if (!result) return;
     }
 
     submit();
@@ -166,7 +168,7 @@ async function submit_form(event) {
 // Page startup logic
 
 async function clear_get_params() {
-    window.history.replaceState({}, 'Register/Login', window.location.pathname);
+    window.history.replaceState({}, '', window.location.pathname);
 }
 
 async function load_info_message() {
@@ -190,8 +192,6 @@ async function add_event_listeners() {
         'submit', 
         submit_form
     );
-
-    
 }
 
 window.onload = function () {

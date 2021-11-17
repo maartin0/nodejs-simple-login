@@ -1,3 +1,4 @@
+const validator = require('validator');
 const express = require('express');
 const router = express.Router();
 
@@ -6,6 +7,7 @@ const auth = require('./auth');
 const INVALID_CREDENTIALS_ERROR = 'Invalid username and password combination.';
 const UNKNOWN_ERROR = 'An unknown error occurred. Please try again later.';
 const USER_ALREADY_EXISTS_ERROR = 'A user with that name already exists.';
+const INVALID_EMAIL_ERROR = 'Invalid email address.'
 
 async function sendError(response, info = INVALID_CREDENTIALS_ERROR) {
     response.send({
@@ -112,7 +114,7 @@ router.get('/account', session, async function (request, response) {
     const username = await auth.fetch.user.name(userID);
     const email = await auth.fetch.user.email(userID);
     
-    response.render('account', {username, email, csrfToken: request.csrfToken() });
+    response.render('account', {validator.escape(username), validator.escape(email), csrfToken: request.csrfToken() });
 });
 
 router.post('/auth/account', session, async function (request, response) {
@@ -123,21 +125,29 @@ router.post('/auth/account', session, async function (request, response) {
         return;
     }
 
-    if (request.body.email !== "") {
-        const email = request.body.email;
-        // Check is email
+    let email = request.body.email;
+    if (email == null || !validator.isEmail(email + '')) {
+        await sendError(response, INVALID_EMAIL_ERROR);
+        return;
+    } else if (await auth.fetch.user.email(userID) === email) {
+        email = null;
+    } else {
+        email = validator.normalizeEmail(email);
     }
 
-    const oldUsername = await auth.fetch.user.name(userID);    
-
-    if (request.body.username != null && request.body.username !== "" && request.body.username !== oldUsername) {
-        if (await auth.fetch.user.id(request.body.username) != null) {
-            await sendError(response, USER_ALREADY_EXISTS_ERROR);
-            return;
-        }
-        const username = request.body.username;
+    let username = request.body.username;
+    if (username == null) {
+        // TODO: Implement Error
+        await sendError(response, INVALID_USERNAME_ERROR);
+        return;
+    } else if (await auth.fetch.user.name(userID) === username) {
+        username = null;
+    } else if (await auth.fetch.user.id(username) != null) {
+        await sendError(response, USER_ALREADY_EXISTS_ERROR);
+        return;
     }
 
+    // TODO: Check password etc... then save not null values
 
 });
 

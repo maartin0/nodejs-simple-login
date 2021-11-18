@@ -179,15 +179,32 @@ router.post('/auth/account', session, async function (request, response) {
     });
 });
 
-async function session(request, response, next) {
-    const result = await auth.session.verify(request.cookies.session);
+router.post('/auth/account/delete', session, function (request, response) {
+    const sessionID = request.cookies.session;
+    const userID = await auth.fetch.user.idFromSession(sessionID);
 
-    if (!result) {
-        response.redirect("/login");
+    if (userID == null) {
+        await sendError(response, UNKNOWN_ERROR);
         return;
     }
 
-    next();
+    if (!await auth.account.remove(userID)) {
+        await sendError(response, UNKNOWN_ERROR);
+    } else {
+        response.send({
+            success: 1
+        })
+    }
+
+    // TODO: Implement Frontend
+});
+
+async function session(request, response, next) {
+    if (!await auth.session.verify(request.cookies.session)) {
+        response.redirect("/login");
+    } else {
+        next();
+    }
 }
 
 module.exports = {

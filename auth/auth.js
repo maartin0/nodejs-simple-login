@@ -202,6 +202,15 @@ async function deleteSession(sessionID) {
     return true;
 }
 
+async function checkPassword(userID, password) {
+    const userData = await getUserData(userID);
+    if (userData == null) return false;
+    const hash = userData.hash;
+    if (hash == null) return false;
+    
+    return await bcrypt.compare(password, hash);
+}
+
 /* PUBLIC AUTH FUNCTIONS */
 
 async function register(username, password) {
@@ -234,8 +243,8 @@ async function login(username, password) {
     // Check if password is correct
     const userData = await getUserData(userID);
     const hash = userData.hash;
-
-    if (!bcrypt.compare(password, hash)) return false;
+    
+    if (!await bcrypt.compare(password, hash)) return false;
 
     if (userData.session != null) await deleteSession(userData.session);
 
@@ -349,4 +358,5 @@ module.exports = {
             idFromSession: getUserIDFromSession,
         },
     },
+    compare: checkPassword,
 }

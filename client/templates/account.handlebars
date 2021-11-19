@@ -12,7 +12,10 @@
         } else {
             const result = await send_xhr(
                 '/auth/account',
-                { _csrf: document.getElementsByName('_csrf').item(0).value},
+                {
+                    _csrf: document.getElementsByName('_csrf').item(0).value,
+                    delete_account: 1,
+                },
                 function success() {
                     notify("Successfully deleted account. Redirecting...");
                     setTimeout(() => window.location = "/login", 1000);

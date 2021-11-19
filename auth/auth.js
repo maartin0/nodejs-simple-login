@@ -257,22 +257,18 @@ async function deleteAccount(userID) {
     console.log(userID);
     if (userID == null) return false;
 
-    console.count("Delete");
     const userData = await getUserData(userID);
     if (userData == null) return false;
 
-    console.count("Delete");
     // Check if user exists
     if (userData.username == null) return false;
 
-    console.count("Delete");
     // Delete any remaining session
     if (userData.session != null) await deleteSession(userData.session);
     
     await files.remove(
         await getUserFilePath(userID)
     );
-    console.count("Delete");
 
     return await attempt(setUserID, 200, 10, [userData.username, undefined]);
 }

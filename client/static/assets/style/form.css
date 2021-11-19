@@ -4,6 +4,8 @@
     border-radius: 0.5em;
     border: 5px solid #4C82F0;
     padding: 4px;
+
+    display: inline-block;
     
     animation: fadein 0.5s;
 
@@ -104,5 +106,23 @@ body {
 .left {
     display: block;
     margin-left: 1.2rem;
+    margin-right: 1.2rem;
     left: 0;
+}
+
+.right {
+    display: block;
+    margin-left: 1.2rem;
+    margin-right: 1.2rem;
+    right: 0;
+    float: right;
+}
+
+.red {
+    color: red;
+}
+
+.url {
+    text-decoration: underline;
+    cursor: pointer;
 }

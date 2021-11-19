@@ -179,7 +179,7 @@ router.post('/auth/account', session, async function (request, response) {
     });
 });
 
-router.post('/auth/account/delete', session, function (request, response) {
+router.post('/auth/account/delete', session, async function (request, response) {
     const sessionID = request.cookies.session;
     const userID = await auth.fetch.user.idFromSession(sessionID);
 
@@ -193,10 +193,8 @@ router.post('/auth/account/delete', session, function (request, response) {
     } else {
         response.send({
             success: 1
-        })
+        });
     }
-
-    // TODO: Implement Frontend
 });
 
 async function session(request, response, next) {

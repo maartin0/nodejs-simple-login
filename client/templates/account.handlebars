@@ -1,6 +1,31 @@
 <script src="/assets/script/form.js"></script>
 <link rel="stylesheet" type="text/css" href="/assets/style/form.css">
 
+<script>
+    let has_clicked = false;
+
+    async function delete_account() {
+        if (!has_clicked) {
+            await clear_notifications();
+            notify("Are you sure you want to delete your account? This action is irreversible. Press again to confirm.");
+            has_clicked = true;
+        } else {
+            const result = await send_xhr(
+                '/auth/account/delete',
+                { _csrf: await readCookie('_csrf')},
+                function success() {
+                    notify("Successfully deleted account. Redirecting...");
+                    setTimeout(() => window.location = "/login", 1000);
+                },
+                function failure() {
+                    notify("An unknown error occurred, please try again later.");
+                }
+            );
+            has_clicked = false;
+        }
+    }
+</script>
+
 <div class="form container">
     <form javascript_action="/auth/account" method="post">
         <h1 class="left">Account Settings</h1>
@@ -18,18 +43,20 @@
 
         <label for="new-password" hidden>New Password</label></td>
         <input class="field left" name="new-password" type="password" placeholder="New Password" autocomplete="new-password">
-        <button class="toggle" id="toggle-psk" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
 
         <br />
 
         <label for="confirm-password" hidden>Confirm Password</label></td>
         <input class="field left ignored" name="confirm-password" type="password" placeholder="Confirm Password" autocomplete="new-password">
-        <button class="toggle" id="toggle-psk" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
 
         <br />
 
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
         <input class="field submit left ignored" name="submit" type="submit" value="Save">
+    
+        <span class="right red url" onclick="delete_account()">Delete Account</span>
     </form>
 </div>

@@ -12,7 +12,7 @@ async function soft_delete_element(element) {
     setTimeout(function () { element.remove() }, 500);
 }
 
-async function notify(string, is_error) {
+async function notify(string, is_error, timeout=-1) {
     var container = document.createElement('div');
     
     var notification = document.createElement('span');
@@ -43,6 +43,14 @@ async function notify(string, is_error) {
     }
 
     document.getElementById("notifications").appendChild(container);
+
+    if (timeout > 0) {
+        setTimeout(async function () {
+            try {
+                container.remove();
+            } catch {}
+        }, timeout);
+    }
 }
 
 // Event Function(s)
@@ -197,4 +205,16 @@ async function add_event_listeners() {
 window.onload = function () {
     load_info_message();
     add_event_listeners()
+}
+
+// Other functions
+async function readCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
 }

@@ -21,7 +21,13 @@ app.use(cookieParser());
 
 // ----------------------------------------------------
 
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf({
+    cookie: true,
+/*    value: function (req) {
+        console.log(req.body._csrf);
+        return req.body._csrf;
+    } */
+});
 app.use(csrfProtection);
 
 app.use(function (err, req, res, next) {
@@ -29,9 +35,8 @@ app.use(function (err, req, res, next) {
 
   // handle CSRF token errors here
   res.status(403);
-  res.send('Invalid CSRF Token.');
-
-  console.log(req);
+  res.send('403: Forbidden.');
+  
   console.log("Invalid CSRF Token");
 });
 
@@ -44,8 +49,8 @@ app.use('/', auth.router);
 
 app.get('/', auth.session, function (request, response) {
     response.render('index');
-})
+});
 
 app.listen(port, () => {
-  console.log(`Server Listening at http://localhost:${port}`);
+  console.log(`\x1b[32mServer Listening at http://localhost:${port}\x1b[0m`);
 });

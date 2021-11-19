@@ -132,69 +132,58 @@ router.post('/auth/account', session, async function (request, response) {
         await sendError(response, UNKNOWN_ERROR);
         return;
     }
-    
-    let email = request.body.email;
-    if (email == null || email === '') {
-        email = null;
-    } else if (!validator.isEmail(email + '')) {
-        await sendError(response, INVALID_EMAIL_ERROR);
-        return;
-    } else {
-        email = validator.normalizeEmail(email);
-        if (await auth.fetch.user.email(userID) === email) {
-            email = null;
+
+    if (request.body.delete_account === 1) {
+        if (!await auth.account.remove(userID)) {
+            await sendError(response, UNKNOWN_ERROR);
+            return;
         }
-    }
-    
-    let username = request.body.username;
-    if (username == null || username == '' || await auth.fetch.user.name(userID) === username) {
-        username = null;
-    } else if (await auth.fetch.user.id(username) != null) {
-        await sendError(response, USER_ALREADY_EXISTS_ERROR);
-        return;
-    }
-    
-    let password = request.body.password;
-    if (password == null || password === '' || await auth.compare(userID, password)) {
-        password = null;
-    }
+    } else {
+        let email = request.body.email;
+        if (email == null || email === '') {
+            email = null;
+        } else if (!validator.isEmail(email + '')) {
+            await sendError(response, INVALID_EMAIL_ERROR);
+            return;
+        } else {
+            email = validator.normalizeEmail(email);
+            if (await auth.fetch.user.email(userID) === email) {
+                email = null;
+            }
+        }
+        
+        let username = request.body.username;
+        if (username == null || username == '' || await auth.fetch.user.name(userID) === username) {
+            username = null;
+        } else if (await auth.fetch.user.id(username) != null) {
+            await sendError(response, USER_ALREADY_EXISTS_ERROR);
+            return;
+        }
+        
+        let password = request.body.password;
+        if (password == null || password === '' || await auth.compare(userID, password)) {
+            password = null;
+        }
 
-    const results = [];
-    if (email != null) {
-        results.push(await auth.account.modify.email(userID, email));
-    } if (username != null) {
-        results.push(await auth.account.modify.username(userID, username));
-    } if (password != null) {
-        results.push(await auth.account.modify.password(userID, password));
-    }
+        const results = [];
+        if (email != null) {
+            results.push(await auth.account.modify.email(userID, email));
+        } if (username != null) {
+            results.push(await auth.account.modify.username(userID, username));
+        } if (password != null) {
+            results.push(await auth.account.modify.password(userID, password));
+        }
 
-    const result = results.every(x => x);
-    if (!result) {
-        await sendError(response, UNKNOWN_ERROR);
-        return;
+        const result = results.every(x => x);
+        if (!result) {
+            await sendError(response, UNKNOWN_ERROR);
+            return;
+        }
     }
     
     response.send({
         success: 1
     });
-});
-
-router.post('/auth/account/delete', session, async function (request, response) {
-    const sessionID = request.cookies.session;
-    const userID = await auth.fetch.user.idFromSession(sessionID);
-
-    if (userID == null) {
-        await sendError(response, UNKNOWN_ERROR);
-        return;
-    }
-
-    if (!await auth.account.remove(userID)) {
-        await sendError(response, UNKNOWN_ERROR);
-    } else {
-        response.send({
-            success: 1
-        });
-    }
 });
 
 async function session(request, response, next) {

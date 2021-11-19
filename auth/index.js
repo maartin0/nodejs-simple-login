@@ -116,7 +116,7 @@ router.get('/account', session, async function (request, response) {
     
     if (email == null) email = '';
     if (username == null) username = '';
-
+    
     response.render('account', {
         username: validator.escape(username), 
         email: validator.escape(email), 

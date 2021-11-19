@@ -11,8 +11,8 @@
             has_clicked = true;
         } else {
             const result = await send_xhr(
-                '/auth/account/delete',
-                { _csrf: await readCookie('_csrf')},
+                '/auth/account',
+                { _csrf: document.getElementsByName('_csrf').item(0).value},
                 function success() {
                     notify("Successfully deleted account. Redirecting...");
                     setTimeout(() => window.location = "/login", 1000);

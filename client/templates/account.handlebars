@@ -2,30 +2,28 @@
 <link rel="stylesheet" type="text/css" href="/assets/style/form.css">
 
 <script>
-    let has_clicked = false;
+    async function confirm_deletion() {
+        await send_xhr(
+            '/auth/account',
+            {
+                _csrf: document.getElementsByName('_csrf').item(0).value,
+                delete_account: 1,
+            },
+            function success() {
+                notify("Successfully deleted account. Redirecting...");
+                setTimeout(() => window.location = "/login", 1000);
+            },
+            function failure() {
+                notify("An unknown error occurred, please try again later.");
+            }
+        );
+        save_override = null;
+    }
 
     async function delete_account() {
-        if (!has_clicked) {
-            await clear_notifications();
-            notify("Are you sure you want to delete your account? This action is irreversible. Press again to confirm.");
-            has_clicked = true;
-        } else {
-            const result = await send_xhr(
-                '/auth/account',
-                {
-                    _csrf: document.getElementsByName('_csrf').item(0).value,
-                    delete_account: 1,
-                },
-                function success() {
-                    notify("Successfully deleted account. Redirecting...");
-                    setTimeout(() => window.location = "/login", 1000);
-                },
-                function failure() {
-                    notify("An unknown error occurred, please try again later.");
-                }
-            );
-            has_clicked = false;
-        }
+        await clear_notifications();
+        const confirm = window.confirm("Are you sure you want to delete your account? This action is irreversible!");
+        if (confirm) confirm_deletion();
     }
 </script>
 
@@ -35,12 +33,12 @@
         <section id="notifications" class="left"></section>
 
         <label for="email" hidden>Email Address</label>
-        <input class="field center" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
+        <input class="field left" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
 
         <br />
 
         <label for="username" hidden>Username</label>
-        <input class="field center" name="username" placeholder="Username" type="username" autocomplete="username" value="{{username}}">
+        <input class="field left" name="username" placeholder="Username" type="username" autocomplete="username" value="{{username}}">
 
         <br />
 
@@ -58,8 +56,10 @@
 
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
-        <input class="field submit left ignored" name="submit" type="submit" value="Save">
-    
-        <span class="right red url" onclick="delete_account()">Delete Account</span>
+
+        <div>
+            <input class="field submit left ignored bottom" name="submit" type="submit" value="Save">
+            <span class="right red url bottom" onclick="delete_account()">Delete Account</span>
+        </div>
     </form>
 </div>

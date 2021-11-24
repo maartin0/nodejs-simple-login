@@ -254,7 +254,6 @@ async function login(username, password) {
 /* ACCOUNT FUNCTIONS */
 
 async function deleteAccount(userID) {
-    console.log(userID);
     if (userID == null) return false;
 
     const userData = await getUserData(userID);

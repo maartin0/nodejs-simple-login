@@ -36,6 +36,9 @@
 body {
     background-color: black;
     font-family: sans-serif;
+    zoom: 1.2;
+    font-size: 15px;
+    font-size: 1.5vw;
 }
 
 .container {
@@ -53,7 +56,7 @@ body {
     transform: translate(-50%, -50%);
 
     padding: 2%;
-    width: 20rem;
+    width: 20%;
 }
 
 .field {
@@ -105,15 +108,15 @@ body {
 
 .left {
     display: block;
-    margin-left: 1.2rem;
-    margin-right: 1.2rem;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
     left: 0;
 }
 
 .right {
     display: block;
-    margin-left: 1.2rem;
-    margin-right: 1.2rem;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
     right: 0;
     float: right;
 }
@@ -125,4 +128,11 @@ body {
 .url {
     text-decoration: underline;
     cursor: pointer;
+    padding-top: 3%;
+}
+
+.bottom {
+    display: inline-block;
+    vertical-align: middle;
+    margin-bottom: 0.5em;
 }

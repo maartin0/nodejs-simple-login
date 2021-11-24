@@ -7,7 +7,6 @@ const app = new express();
 const port = 80;
 
 // ----------------------------------------------------
-
 app.use(express.static(__dirname + '/client/static/'));
 app.set('views', __dirname + '/client/templates/');
 

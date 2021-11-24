@@ -33,23 +33,23 @@
         <section id="notifications" class="left"></section>
 
         <label for="email" hidden>Email Address</label>
-        <input class="field left" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
+        <input class="field" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
 
         <br />
 
         <label for="username" hidden>Username</label>
-        <input class="field left" name="username" placeholder="Username" type="username" autocomplete="username" value="{{username}}">
+        <input class="field" name="username" placeholder="Username" type="username" autocomplete="username" value="{{username}}">
 
         <br />
 
         <label for="new-password" hidden>New Password</label></td>
-        <input class="field left" name="new-password" type="password" placeholder="New Password" autocomplete="new-password">
+        <input class="field" name="new-password" type="password" placeholder="New Password" autocomplete="new-password">
         <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
 
         <br />
 
         <label for="confirm-password" hidden>Confirm Password</label></td>
-        <input class="field left ignored" name="confirm-password" type="password" placeholder="Confirm Password" autocomplete="new-password">
+        <input class="field ignored" name="confirm-password" type="password" placeholder="Confirm Password" autocomplete="new-password">
         <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
 
         <br />
@@ -57,9 +57,10 @@
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
 
-        <div>
-            <input class="field submit left ignored bottom" name="submit" type="submit" value="Save">
-            <span class="right red url bottom" onclick="delete_account()">Delete Account</span>
+        <div class="end">
+            <input class="field submit ignored" name="submit" type="submit" value="Save">
+            <div class="fill"></div>
+            <span class="red url" onclick="delete_account()">Delete Account</span>
         </div>
     </form>
 </div>

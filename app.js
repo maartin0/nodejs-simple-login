@@ -20,13 +20,7 @@ app.use(cookieParser());
 
 // ----------------------------------------------------
 
-const csrfProtection = csrf({
-    cookie: true,
-/*    value: function (req) {
-        console.log(req.body._csrf);
-        return req.body._csrf;
-    } */
-});
+const csrfProtection = csrf({ cookie: true });
 app.use(csrfProtection);
 
 app.use(function (err, req, res, next) {

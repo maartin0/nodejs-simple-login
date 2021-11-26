@@ -16,7 +16,7 @@ async function sendError(response, info = INVALID_CREDENTIALS_ERROR) {
     });
 }
 
-router.get('/login', async function (request, response) {
+router.get('/login', noSession, async function (request, response) {
     response.render('login', { csrfToken: request.csrfToken() });
 });
 
@@ -52,7 +52,7 @@ router.post('/auth/login', async function (request, response) {
     });
 });
 
-router.get('/register', async function (request, response) {
+router.get('/register', noSession, async function (request, response) {
     response.render('register', { csrfToken: request.csrfToken() });
 });
 
@@ -99,11 +99,15 @@ router.post('/auth/register', async function (request, response) {
     });
 });
 
-router.get('/logout', async function (request, response) {
+router.get('/logout', session, async function (request, response) {
     const sessionID = request.cookies.session;
     const result = await auth.session.remove(sessionID);
 
     response.render('logout');
+});
+
+router.get('/forgot', noSession, async function (request, response) {
+    response.render("forgot");
 });
 
 router.get('/account', session, async function (request, response) {
@@ -189,6 +193,14 @@ router.post('/auth/account', session, async function (request, response) {
 async function session(request, response, next) {
     if (!await auth.session.verify(request.cookies.session)) {
         response.redirect("/login");
+    } else {
+        next();
+    }
+}
+
+async function noSession(request, response, next) {
+    if (await auth.session.verify(request.cookies.session)) {
+        response.redirect("/");
     } else {
         next();
     }

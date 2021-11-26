@@ -20,6 +20,11 @@
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <input type="hidden" class="ignored" name="redirect" value="/">
         <input type="hidden" class="ignored" name="success" value="Redirecting...">
-        <input class="field submit left ignored" name="submit" type="submit" value="Login">
+
+        <div class="end">
+            <input class="field submit ignored" name="submit" type="submit" value="Login">
+            <div class="fill"></div>
+            <span class="red url" onclick="window.location='/forgot'">Forgot?</span>
+        </div>
     </form>
 </div>

@@ -107,7 +107,18 @@ router.get('/logout', session, async function (request, response) {
 });
 
 router.get('/forgot', noSession, async function (request, response) {
-    response.render("forgot");
+    response.render("forgot", { csrfToken: request.csrfToken() });
+});
+
+router.post('/auth/forgot', noSession, async function (request, response) {
+    let email = request.body.email;
+    if (!validator.isEmail(email + '')) {
+        response.send({ success: 1 });
+        return;
+    }
+
+    email = validator.normalizeEmail(email);
+    
 });
 
 router.get('/account', session, async function (request, response) {

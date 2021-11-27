@@ -1,5 +1,8 @@
 .replit
 data/users.json
+data/emails.json
+data/otps.json
 data/users/*
 data/sessions/*
+config/*
 test.js

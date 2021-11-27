@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const auth = require('./auth');
+const email = require('./email');
 
 const INVALID_CREDENTIALS_ERROR = 'Invalid username and password combination.';
 const UNKNOWN_ERROR = 'An unknown error occurred. Please try again later.';
@@ -119,6 +120,7 @@ router.post('/auth/forgot', noSession, async function (request, response) {
 
     email = validator.normalizeEmail(email);
     
+
 });
 
 router.get('/account', session, async function (request, response) {

@@ -5,7 +5,7 @@ const openFiles = new Set();
 async function getPath(filename) {
     const path = __dirname.split('/');
     path.splice(path.length - 1);
-    return path.join('/') + '/data/' + filename;
+    return path.join('/') + '/' + filename;
 }
 
 async function attemptOpen(path) {

@@ -6,8 +6,8 @@ const bcrypt = require('bcrypt-promise');
 const BCRYPT_ROUNDS = 10;
 const SESSION_LENGTH_MS = 60 * 60 * 1000;
 
-const USER_MAP_FILE_PATH = 'users.json';
-const EMAIL_MAP_FILE_PATH = 'emails.json';
+const USER_MAP_FILE_PATH = 'data/users.json';
+const EMAIL_MAP_FILE_PATH = 'data/emails.json';
 
 const now = async () => Date.now();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -17,8 +17,8 @@ const hasExpired = async (timestamp) => ((await now()) > timestamp);
 
 const uuid = async () => crypto.randomUUID();
 
-const getUserFilePath = async (userID) => `users/${userID}.json`;
-const getSessionFilePath = async (sessionID) => `sessions/${sessionID}.json`;
+const getUserFilePath = async (userID) => `data/users/${userID}.json`;
+const getSessionFilePath = async (sessionID) => `data/sessions/${sessionID}.json`;
 
 async function getUserFile(userID, create=false) {
     if (userID == null) return null;
@@ -48,7 +48,7 @@ async function getSessionData(sessionID) {
     return await files.read(sessionFilePath);
 }
 
-const getMapFile = async () => await files.init(EMAIL_MAP_FILE_PATH);
+const getEmailFile = async () => await files.init(EMAIL_MAP_FILE_PATH);
 
 async function getEmailData() {
     if (!await files.exists(EMAIL_MAP_FILE_PATH)) {
@@ -352,7 +352,10 @@ async function setUserEmail(userID, email) {
 
     const oldEmail = await getUserEmail(userID);
 
-    // TODO: If old email is stored, remove from database, then save new one, and save email file.
+    if (oldEmail != null && oldEmail !== '') {
+        emailFile.json[oldEmail] = undefined;
+    }
+    
     // TODO: Add to module exports
     // TODO: Implement sending emails + generating otps + expiry
 
@@ -360,16 +363,18 @@ async function setUserEmail(userID, email) {
     emailFile.json[email] = userID;
 
     await files.save(userFile);
-
-
+    await files.save(emailFile);
 
     return true;
 }
 
 async function getUserIDFromEmail(email) {
-    if (email == null) return false;
+    if (email == null) return null;
 
+    const emailData = await getEmailData();
+    if (emailData == null) return null;
 
+    return emailData[email];
 }
 
 module.exports = {
@@ -396,7 +401,7 @@ module.exports = {
             name: getUserName,
             email: getUserEmail,
             idFromSession: getUserIDFromSession,
-            idFromEmail: 
+            idFromEmail: getUserIDFromEmail,
         },
     },
     compare: checkPassword,

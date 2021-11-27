@@ -1,30 +1,40 @@
 const nodemailer = require('nodemailer');
+const files = require('../file');
 
-var transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'youremail@gmail.com',
-    pass: 'yourpassword'
-  }
-});
+const EMAIL_CREDENTIALS_PATH = 'config/email_credentials.json';
 
-var mailOptions = {
-  from: 'youremail@gmail.com',
-  to: 'myfriend@yahoo.com',
-  subject: 'Sending Email using Node.js',
-  text: 'That was easy!'
-};
+let email_config;
+let transporter;
 
-transporter.sendMail(mailOptions, function(error, info){
-  if (error) {
-    console.log(error);
-  } else {
-    console.log('Email sent: ' + info.response);
-  }
-});
-async function send(to, subject, body) {
-    
+async function init() {
+    email_config = await files.read(EMAIL_CREDENTIALS_PATH);
+    transporter = nodemailer.createTransport({
+        direct: true,
+        name: '',
+    });
 }
+
+async function send(to, subject, text) {
+    transporter.sendMail(
+        {
+            from: email_config.email,
+            to,
+            subject,
+            text,
+        }, 
+        function (error, info) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        }
+    );
+}
+
+init().then(function () {
+    send('martinmmps@gmail.com', 'Guess What', 'Hello World');
+});
 
 module.exports = {
     send,

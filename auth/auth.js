@@ -27,30 +27,30 @@ const getUserFilePath = async (userID) => `data/users/${userID}.json`;
 const getSessionFilePath = async (sessionID) => `data/sessions/${sessionID}.json`;
 
 async function getUserFile(userID, create=false) {
-    if (userID == null) return null;
+    if (userID == null) return;
     const userFilePath = await getUserFilePath(userID);
-    if (!create && !await files.exists(userFilePath)) return null;
+    if (!create && !await files.exists(userFilePath)) return;
     return await files.init(userFilePath);
 }
 
 async function getUserData(userID) {
-    if (userID == null) return null;
+    if (userID == null) return;
     const userFilePath = await getUserFilePath(userID);
-    if (!await files.exists(userFilePath)) return null;
+    if (!await files.exists(userFilePath)) return;
     return await files.read(userFilePath);
 }
 
 async function getSessionFile(sessionID, create=false) {
-    if (sessionID == null) return null;
+    if (sessionID == null) return;
     const sessionFilePath = await getSessionFilePath(sessionID);
-    if (!create && !await files.exists(sessionFilePath)) return null;
+    if (!create && !await files.exists(sessionFilePath)) return;
     return await files.init(sessionFilePath);
 }
 
 async function getSessionData(sessionID) {
-    if (sessionID == null) return null;
+    if (sessionID == null) return;
     const sessionFilePath = await getSessionFilePath(sessionID);
-    if (!await files.exists(sessionFilePath)) return null;
+    if (!await files.exists(sessionFilePath)) return;
     return await files.read(sessionFilePath);
 }
 
@@ -89,10 +89,10 @@ async function attempt(target, delay, limit, args) {
 }
 
 async function getUserID(username) {
-    if (username == null) return null;
+    if (username == null) return;
 
     const mapData = await getMapData();
-    if (mapData == null) return null;
+    if (mapData == null) return;
     return mapData[username];
 }
 
@@ -109,10 +109,10 @@ async function setUserID(username, userID) {
 }
 
 async function getUserName(userID) {
-    if (userID == null) return null;
+    if (userID == null) return;
     
     const userData = await getUserData(userID);
-    if (userData == null) return null;
+    if (userData == null) return;
 
     return userData.username;
 }
@@ -153,10 +153,10 @@ async function createSession(userID) {
 }
 
 async function getSession(userID) {
-    if (userID == null) return null;
+    if (userID == null) return;
 
     const userData = await getUserData(userID);
-    if (userData == null) return null;
+    if (userData == null) return;
     
     const valid = await checkSession(userData.session);
     if (valid) return userData.session;
@@ -164,10 +164,10 @@ async function getSession(userID) {
     // If stored session is valid, return it, otherwise create a new session.
 
     const createSuccess = await createSession(userID);
-    if (!createSuccess) return null;
+    if (!createSuccess) return;
 
     const newUserData = await getUserData(userID);
-    if (newUserData == null) return null;
+    if (newUserData == null) return;
     
     return newUserData.session;
 }
@@ -318,19 +318,19 @@ async function modifyPassword(userID, newPassword) {
 }
 
 async function getUserIDFromSession(sessionID) {
-    if (sessionID == null) return null;
+    if (sessionID == null) return;
 
     const sessionData = await getSessionData(sessionID);
-    if (sessionData == null) return null;
+    if (sessionData == null) return;
 
     return sessionData.userID;
 }
 
 async function getUserEmail(userID) {
-    if (userID == null) return null;
+    if (userID == null) return;
 
     const userData = await getUserData(userID);
-    if (userData == null) return null;
+    if (userData == null) return;
     
     return userData.email;
 }
@@ -366,16 +366,16 @@ async function setUserEmail(userID, email) {
 }
 
 async function getUserIDFromEmail(email) {
-    if (email == null) return null;
+    if (email == null) return;
 
     const emailData = await getEmailData();
-    if (emailData == null) return null;
+    if (emailData == null) return;
 
     return emailData[email];
 }
 
 async function createOTP(userID) {
-    if (userID == null) return null;
+    if (userID == null) return;
 
     const otpFile = await getOTPFile();
     if (otpFile == null) return false;
@@ -384,6 +384,12 @@ async function createOTP(userID) {
     if (userFile == null) { 
         files.close(otpFile);
         return false;
+    }
+
+    const oldPsk = userFile.json.otp;
+
+    if (oldPsk != null) {
+        otpFile.json[oldPsk] = undefined;
     }
 
     const psk = await uuid();
@@ -400,10 +406,10 @@ async function createOTP(userID) {
 }
 
 async function getOTP(userID) {
-    if (userID == null) return null;
+    if (userID == null) return;
 
     const result = await attempt(createOTP, 200, 10, [userID]);
-    if (!result) return null;
+    if (!result) return;
 
     const userData = await getUserData(userID);
     if (userData == null) return false;
@@ -412,24 +418,23 @@ async function getOTP(userID) {
 }
 
 async function verifyOTP(otp) {
-    if (otp == null) return false;
+    if (otp == null) return;
 
     const otpData = await getOTPData();
-    if (otpData == null) return false;
+    if (otpData == null) return;
 
     const userID = otpData[otp];
-    if (userID == null) return false;
+    if (userID == null) return;
 
     const userData = await getUserData(userID);
-    if (userData == null) return false;
+    if (userData == null) return;
 
     const expiry = userData.otpExpiry;
-    if (expiry == null) return false;
+    if (expiry == null) return;
 
     const expired = await hasExpired(expiry);
-
     const userFile = await getUserFile(userID);
-    if (userFile == null) return false;
+    if (userFile == null) return;
 
     userFile.json.otp = undefined;
     userFile.json.otpExpiry = undefined;
@@ -437,19 +442,19 @@ async function verifyOTP(otp) {
     await files.save(userFile);
 
     const otpFile = await getOTPFile();
-    if (otpFile == null) return false;
+    if (otpFile == null) return;
 
     otpFile.json[otp] = undefined;
     
     await files.save(otpFile);
 
-    return expired;
+    return userID;
 }
 
 module.exports = {
     entry: {
-        login: login,
-        register: register,
+        login,
+        register,
     },
     session: {
         fetch: getSession,

@@ -9,8 +9,9 @@ let transporter;
 async function init() {
     email_config = await files.read(EMAIL_CREDENTIALS_PATH);
     transporter = nodemailer.createTransport({
-        direct: true,
-        name: '',
+        service: email_config.service,
+        auth: email_config.auth,
+        debug: true
     });
 }
 
@@ -31,10 +32,6 @@ async function send(to, subject, text) {
         }
     );
 }
-
-init().then(function () {
-    send('martinmmps@gmail.com', 'Guess What', 'Hello World');
-});
 
 module.exports = {
     send,

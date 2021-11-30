@@ -4,16 +4,22 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt-promise');
 
 const BCRYPT_ROUNDS = 10;
+// Session Length: 1 hour
 const SESSION_LENGTH_MS = 60 * 60 * 1000;
+// OTP Password Length: 5 Minutes
+const OTP_LENGTH_MS = 60 * 5 * 1000;
 
 const USER_MAP_FILE_PATH = 'data/users.json';
 const EMAIL_MAP_FILE_PATH = 'data/emails.json';
+const OTP_MAP_FILE_PATH = 'data/otps.json';
 
 const now = async () => Date.now();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const getExpiry = async () => ((await now()) + SESSION_LENGTH_MS);
 const hasExpired = async (timestamp) => ((await now()) > timestamp);
+
+const getOTPExpiry async () => ((await now()) + OTP_LENGTH_MS);
 
 const uuid = async () => crypto.randomUUID();
 
@@ -48,30 +54,24 @@ async function getSessionData(sessionID) {
     return await files.read(sessionFilePath);
 }
 
-const getEmailFile = async () => await files.init(EMAIL_MAP_FILE_PATH);
-
-async function getEmailData() {
-    if (!await files.exists(EMAIL_MAP_FILE_PATH)) {
-        const emailFile = await getEmailFile();
-        await files.close(emailFile);
-        return emailFile.json;
+async function getFileData(path) {
+    if (!await files.exists(path)) {
+        const file = await files.init(path);
+        await files.close(file);
+        return file.json;
     }
 
-    return await files.read(EMAIL_MAP_FILE_PATH);
+    return await files.read(path);
 }
+
+const getEmailFile = async () => await files.init(EMAIL_MAP_FILE_PATH);
+const getEmailData = async () => await getFileData(EMAIL_MAP_FILE_PATH);
 
 const getMapFile = async () => await files.init(USER_MAP_FILE_PATH);
+const getMapData = async () => await getFileData(USER_MAP_FILE_PATH);
 
-async function getMapData() {
-    if (!await files.exists(USER_MAP_FILE_PATH)) {
-        const userFile = await getMapFile();
-        await files.close(userFile);
-        return userFile.json;
-    }
-
-    return await files.read(USER_MAP_FILE_PATH);
-}
-
+const getOTPFile = async () => await files.init(OTP_MAP_FILE_PATH);
+const getOTPData = async () => await getFileData(OTP_MAP_FILE_PATH);
 
 async function attempt(target, delay, limit, args) {
     let attempt = 0;
@@ -355,9 +355,6 @@ async function setUserEmail(userID, email) {
     if (oldEmail != null && oldEmail !== '') {
         emailFile.json[oldEmail] = undefined;
     }
-    
-    // TODO: Add to module exports
-    // TODO: Implement sending emails + generating otps + expiry
 
     userFile.json.email = email;
     emailFile.json[email] = userID;
@@ -377,6 +374,78 @@ async function getUserIDFromEmail(email) {
     return emailData[email];
 }
 
+async function createOTP(userID) {
+    if (userID == null) return null;
+
+    const otpFile = await getOTPFile();
+    if (otpFile == null) return false;
+
+    const userFile = await getUserFile(userID);;
+    if (userFile == null) { 
+        files.close(otpFile);
+        return false;
+    }
+
+    const psk = await uuid();
+
+    userFile.json.otp = psk;
+    userFile.json.otpExpiry = await getOTPExpiry();
+
+    otpFile.json[psk] = userID;
+
+    await files.save(userFile);
+    await files.save(otpFile);
+
+    return true;
+}
+
+async function getOTP(userID) {
+    if (userID == null) return null;
+
+    const result = await attempt(createOTP, 200, 10, [userID]);
+    if (!result) return null;
+
+    const userData = await getUserData(userID);
+    if (userData == null) return false;
+
+    return userData.otp;
+}
+
+async function verifyOTP(otp) {
+    if (otp == null) return false;
+
+    const otpData = await getOTPData();
+    if (otpData == null) return false;
+
+    const userID = otpData[otp];
+    if (userID == null) return false;
+
+    const userData = await getUserData(userID);
+    if (userData == null) return false;
+
+    const expiry = userData.otpExpiry;
+    if (expiry == null) return false;
+
+    const expired = await hasExpired(expired);
+
+    const userFile = await getUserFile(userID);
+    if (userFile == null) return false;
+
+    userFile.json.otp = undefined;
+    userFile.json.otpExpiry = undefined;
+
+    await files.save(userFile);
+
+    const otpFile = await getOTPFile();
+    if (otpFile == null) return false;
+
+    otpFile.json[otp] = undefined;
+    
+    await files.save(otpFile);
+
+    return expired;
+}
+
 module.exports = {
     entry: {
         login: login,
@@ -386,6 +455,10 @@ module.exports = {
         fetch: getSession,
         remove: deleteSession,
         verify: checkSession,
+    },
+    otp: {
+        fetch: getOTP,
+        verify: verifyOTP,   
     },
     account: {
         remove: deleteAccount,

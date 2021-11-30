@@ -1,24 +1,24 @@
 const nodemailer = require('nodemailer');
 const files = require('../file');
 
-const EMAIL_CREDENTIALS_PATH = 'config/email_credentials.json';
-
-let email_config;
 let transporter;
+let configFile;
 
-async function init() {
-    email_config = await files.read(EMAIL_CREDENTIALS_PATH);
+const CONFIGURATION_PATH = 'config/auth.json';
+
+files.read(CONFIGURATION_PATH).then((resolve) => {
+    configFile = resolve;
     transporter = nodemailer.createTransport({
-        service: email_config.service,
-        auth: email_config.auth,
+        service: configFile.email.service,
+        auth: configFile.email.auth,
         debug: true
     });
-}
+);
 
 async function send(to, subject, text) {
     transporter.sendMail(
         {
-            from: email_config.email,
+            from: configFile.email.email,
             to,
             subject,
             text,
@@ -31,6 +31,19 @@ async function send(to, subject, text) {
             }
         }
     );
+}
+
+async function sendForgotEmail(email, psk) {
+    const body = `Hi,
+
+    We recieved your password reset request. 
+
+    If you forgot your password please click on the link below and follow the instructions.
+    ${configFile.url}reset?psk=${psk}
+
+    If you believe there has been an error, or you did not make this request. Please ignore this email and consider changing your password.
+    `
+    send(email, 'Your forgot password request', body);
 }
 
 module.exports = {

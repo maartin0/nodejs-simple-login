@@ -4,6 +4,11 @@ const router = express.Router();
 
 const auth = require('./auth');
 const email = require('./email');
+const files = require('../file');
+
+const CONFIGURATION_PATH = 'config/auth.json';
+let configFile;
+files.read(CONFIGURATION_PATH).then((resolve) => (configFile = resolve));
 
 const INVALID_CREDENTIALS_ERROR = 'Invalid username and password combination.';
 const UNKNOWN_ERROR = 'An unknown error occurred. Please try again later.';
@@ -18,7 +23,16 @@ async function sendError(response, info = INVALID_CREDENTIALS_ERROR) {
 }
 
 router.get('/login', noSession, async function (request, response) {
-    response.render('login', { csrfToken: request.csrfToken() });
+    let hiddenString = "hidden";
+
+    if (configFile.email.enable) {
+        hiddenString = "";
+    }
+    
+    response.render('login', { 
+        csrfToken: request.csrfToken(),
+        forgotToggle: hiddenString,
+    });
 });
 
 router.post('/auth/login', async function (request, response) {

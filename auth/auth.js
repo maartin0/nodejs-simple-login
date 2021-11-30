@@ -6,7 +6,7 @@ const bcrypt = require('bcrypt-promise');
 const BCRYPT_ROUNDS = 10;
 // Session Length: 1 hour
 const SESSION_LENGTH_MS = 60 * 60 * 1000;
-// OTP Password Length: 5 Minutes
+// OTP Password Expiry Timeout: 5 Minutes
 const OTP_LENGTH_MS = 60 * 5 * 1000;
 
 const USER_MAP_FILE_PATH = 'data/users.json';
@@ -19,7 +19,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const getExpiry = async () => ((await now()) + SESSION_LENGTH_MS);
 const hasExpired = async (timestamp) => ((await now()) > timestamp);
 
-const getOTPExpiry async () => ((await now()) + OTP_LENGTH_MS);
+const getOTPExpiry = async () => ((await now()) + OTP_LENGTH_MS);
 
 const uuid = async () => crypto.randomUUID();
 
@@ -426,7 +426,7 @@ async function verifyOTP(otp) {
     const expiry = userData.otpExpiry;
     if (expiry == null) return false;
 
-    const expired = await hasExpired(expired);
+    const expired = await hasExpired(expiry);
 
     const userFile = await getUserFile(userID);
     if (userFile == null) return false;

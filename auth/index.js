@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const auth = require('./auth');
-const email = require('./email');
+const emails = require('./email');
 const files = require('../file');
 
 const CONFIGURATION_PATH = 'config/auth.json';
@@ -15,7 +15,9 @@ const UNKNOWN_ERROR = 'An unknown error occurred. Please try again later.';
 const USER_ALREADY_EXISTS_ERROR = 'A user with that name already exists.';
 const INVALID_EMAIL_ERROR = 'Invalid email address.'
 
-async function sendError(response, info = INVALID_CREDENTIALS_ERROR) {
+const encode = (content) => 
+
+async function sendError(response) {
     response.send({
         info,
         success: 0,
@@ -41,7 +43,7 @@ router.post('/auth/login', async function (request, response) {
 
     if (userID == null) {
         // User does not exist.
-        await sendError(response);
+        await sendError(response, INVALID_CREDENTIALS_ERROR);
         return;
     }
 
@@ -50,7 +52,7 @@ router.post('/auth/login', async function (request, response) {
 
     if (!loginResult) {
         // Password is incorrect.
-        await sendError(response);
+        await sendError(response, INVALID_CREDENTIALS_ERROR);
         return;
     }
 
@@ -115,10 +117,10 @@ router.post('/auth/register', async function (request, response) {
 });
 
 router.get('/logout', session, async function (request, response) {
+    response.render('logout');
+    
     const sessionID = request.cookies.session;
     const result = await auth.session.remove(sessionID);
-
-    response.render('logout');
 });
 
 router.get('/forgot', noSession, async function (request, response) {
@@ -126,15 +128,53 @@ router.get('/forgot', noSession, async function (request, response) {
 });
 
 router.post('/auth/forgot', noSession, async function (request, response) {
+    response.send({ success: 1 });
+    
     let email = request.body.email;
-    if (!validator.isEmail(email + '')) {
-        response.send({ success: 1 });
-        return;
-    }
+    if (!validator.isEmail(email + '')) return;
 
     email = validator.normalizeEmail(email);
     
+    const userID = await auth.fetch.user.idFromEmail(email);
+    if (userID == null) return;
 
+    const otp = await auth.otp.fetch(userID);
+    if (otp == null) return;
+
+
+    const body = `Hi,
+
+We recieved your password reset request. 
+
+If you forgot your password please click on the link below and follow the instructions.
+${configFile.url}/reset?psk=${otp}
+
+If you believe there has been an error, or you did not make this request. Please ignore this email and consider changing your password.`
+
+    emails.send(email, 'Your forgot password request', body);
+});
+
+router.get('/reset', noSession, async function (request, response) {
+    const otp = request.query.psk;
+    if (otp == null) {
+        response.redirect('/login?info=Not%20found');
+        return;
+    }
+
+    const userID = await auth.otp.verify(otp);
+    if (userID == null) {
+        response.redirect('/login?info=Invalid%2Fexpired%20token');
+        return;
+    }
+
+    const sessionID = await auth.session.fetch(userID);
+    if (sessionID == null) {
+        response.redirect('/login?info=An%20unknown%20error%20occurred.%20Please%20try%20again%20later');
+        return;
+    }
+
+    response.cookie('session', sessionID);
+    response.redirect('/account');
 });
 
 router.get('/account', session, async function (request, response) {

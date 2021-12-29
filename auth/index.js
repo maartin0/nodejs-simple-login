@@ -206,7 +206,8 @@ router.get('/account', session, async function (request, response) {
 router.post('/auth/account/username', session, async function (request, response) {
     const userID = await auth.fetch.user.idFromSession(request.cookies.session);
     handle(
-        userID && request.body.username && await auth.account.modify.username(userID, request.body.username);
+        userID && request.body.username && await auth.account.modify.username(userID, request.body.username),
+        response
     );
 });
 

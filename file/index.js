@@ -41,7 +41,18 @@ async function pathExists(path) {
     }
 }
 
- 
+async function init(filename) {
+    const filePath = await getPath(filename);
+    if (!(await attemptOpen(filePath))) return null;
+
+    const file = {
+        path: filePath,
+        content: '{}',
+        json: {}
+    }
+
+    return await reload(file);
+}
 
 async function read(filename) {
     if (filename == null) return false;

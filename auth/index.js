@@ -17,11 +17,19 @@ const INVALID_EMAIL_ERROR = 'Invalid email address.'
 
 const encode = (content) => 
 
-async function sendError(response) {
+async function sendError(response, info) {
     response.send({
         info,
         success: 0,
     });
+}
+
+async function handleResult(result, response) {
+    if (result) {
+        response.send({ success: 1 });
+    } else {
+        sendError(response, UNKNOWN_ERROR);
+    }
 }
 
 router.get('/login', noSession, async function (request, response) {
@@ -195,73 +203,50 @@ router.get('/account', session, async function (request, response) {
     });
 });
 
-router.post('/auth/account', session, async function (request, response) {
-    const sessionID = request.cookies.session;
-    const userID = await auth.fetch.user.idFromSession(sessionID);
+router.post('/auth/account/username', session, async function (request, response) {
+    const userID = await auth.fetch.user.idFromSession(request.cookies.session);
+    handle(
+        userID && request.body.username && await auth.account.modify.username(userID, request.body.username);
+    );
+});
 
-    if (userID == null) {
-        await sendError(response, UNKNOWN_ERROR);
-        return;
-    }
+router.post('/auth/account/name', session, async function (request, response) {
+    const userID = await auth.fetch.user.idFromSession(request.cookies.session);
+    handle(
+        userID && request.body.name && await auth.account.modify.name(userID, request.body.name),
+        response
+    );
+});
 
-    if (request.body.delete_account === 1) {
-        if (!await auth.account.remove(userID)) {
-            await sendError(response, UNKNOWN_ERROR);
-            return;
-        }
-    } else {
-        let email = request.body.email;
-        if (email == null || email === '') {
-            email = null;
-        } else if (!validator.isEmail(email + '')) {
-            await sendError(response, INVALID_EMAIL_ERROR);
-            return;
-        } else {
-            email = validator.normalizeEmail(email);
-            if (await auth.fetch.user.email(userID) === email) {
-                email = null;
-            }
-        }
-        
-        let username = request.body.username;
-        if (username == null || username == '' || await auth.fetch.user.name(userID) === username) {
-            username = null;
-        } else if (await auth.fetch.user.id(username) != null) {
-            await sendError(response, USER_ALREADY_EXISTS_ERROR);
-            return;
-        }
-        
-        let password = request.body.password;
-        if (password == null || password === '' || await auth.compare(userID, password)) {
-            password = null;
-        }
+router.post('/auth/account/email', session, async function (request, response) {
+    const userID = await auth.fetch.user.idFromSession(request.cookies.session);
+    handle(
+        userID && request.body.email && validator.isEmail(email + '') && await auth.account.modify.email(userID, validator.normalizeEmail(request.body.email)), 
+        response
+    );
+});
 
-        const results = [];
-        if (email != null) {
-            results.push(await auth.account.modify.email(userID, email));
-        } if (username != null) {
-            results.push(await auth.account.modify.username(userID, username));
-        } if (password != null) {
-            results.push(await auth.account.modify.password(userID, password));
-        }
+router.post('/auth/account/password', session, async function (request, response) {
+    const userID = await auth.fetch.user.idFromSession(request.cookies.session);
+    handle(
+        userID && request.body.password && await auth.account.modify.password(userID, request.body.password),
+        response
+    );
+});
 
-        const result = results.every(x => x);
-        if (!result) {
-            await sendError(response, UNKNOWN_ERROR);
-            return;
-        }
-    }
-    
-    response.send({
-        success: 1
-    });
+router.post('/auth/account/delete', session, async function (request, response) {
+    const userID = await auth.fetch.user.idFromSession(request.cookies.session);
+    handle(
+        userID && await auth.account.remove(userID),
+        response
+    );
 });
 
 async function session(request, response, next) {
-    if (!await auth.session.verify(request.cookies.session)) {
-        response.redirect("/login");
-    } else {
+    if (await auth.session.verify(request.cookies.session)) {
         next();
+    } else {
+        response.redirect("/login");
     }
 }
 

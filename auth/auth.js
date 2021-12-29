@@ -246,7 +246,7 @@ async function register(username, password) {
 
     await files.save(userFile);
 
-    return await attempt(setUserID, 200, 10, [username, userID]);
+    return attempt(setUserID, 200, 10, [username, userID]);
 }
 
 async function login(username, password) {

@@ -1,0 +1,24 @@
+{{
+	email,
+	username,
+	name
+}}
+
+/auth/account/delete:
+_csrf
+
+/auth/account/email:
+_csrf
+email
+
+/auth/account/username:
+_csrf
+username
+
+/auth/account/name:
+_csrf
+
+/auth/account/password:
+_csrf
+new
+

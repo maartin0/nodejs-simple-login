@@ -114,8 +114,19 @@ async function send_xhr(url, data, success, failure) {
     xhr.send(JSON.stringify(data));
 }
 
-async function submit() {
-    var form = document.getElementsByTagName("form").item(0);
+async function submit_form(event) {
+    event.preventDefault();
+    clear_notifications();
+
+    var confirm_elements = document.getElementsByName("confirm");
+    if (confirm_elements.length > 0) {
+        var result = await check_confirmation();
+        if (!result) return;
+    }
+
+    console.log(event);
+
+    var form = event.srcElement;
     var inputs = form.getElementsByTagName("input");
     var redirect = "";
     var successMessage = "";
@@ -158,19 +169,6 @@ async function submit() {
             notify(result.info, true); 
         }
     );
-}
-
-async function submit_form(event) {
-    event.preventDefault();
-    clear_notifications();
-
-    var confirm_elements = document.getElementsByName("confirm");
-    if (confirm_elements.length > 0) {
-        var result = await check_confirmation();
-        if (!result) return;
-    }
-
-    submit();
 }
 
 // Page startup logic

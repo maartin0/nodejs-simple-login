@@ -4,11 +4,8 @@
 <script>
     async function confirm_deletion() {
         await send_xhr(
-            '/auth/account',
-            {
-                _csrf: document.getElementsByName('_csrf').item(0).value,
-                delete_account: 1,
-            },
+            '/auth/account/delete',
+            { _csrf: document.getElementsByName('_csrf').item(0).value },
             function success() {
                 notify("Successfully deleted account. Redirecting...");
                 setTimeout(() => window.location = "/login", 1000);
@@ -28,39 +25,65 @@
 </script>
 
 <div class="form container">
-    <form javascript_action="/auth/account" method="post">
-        <h1 class="left">Account Settings</h1>
-        <section id="notifications" class="left"></section>
+    <h1>Account Settings</h1>
+    <section id="notifications"></section>
 
-        <label for="email" hidden>Email Address</label>
-        <input class="field" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
+    <br /><br />
 
-        <br />
-
-        <label for="username" hidden>Username</label>
+    <form javascript_action="/auth/account/username" method="post">
+        <label for="username">Username</label>
         <input class="field" name="username" placeholder="Username" type="username" autocomplete="username" value="{{username}}">
-
-        <br />
-
-        <label for="new-password" hidden>New Password</label></td>
-        <input class="field" name="new-password" type="password" placeholder="New Password" autocomplete="new-password">
-        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
-
-        <br />
-
-        <label for="confirm-password" hidden>Confirm Password</label></td>
-        <input class="field ignored" name="confirm-password" type="password" placeholder="Confirm Password" autocomplete="new-password">
-        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
-
-        <br />
 
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
 
-        <div class="end">
-            <input class="field submit ignored" name="submit" type="submit" value="Save">
-            <div class="fill"></div>
-            <span class="red url" onclick="delete_account()">Delete Account</span>
-        </div>
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
     </form>
+
+    <br /><br />
+
+    <form javascript_action="/auth/account/name" method="post">
+        <label for="name">First Name</label>
+        <input class="field" name="name" placeholder="Name" type="text" autocomplete="given-name" value="{{name}}">
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <form javascript_action="/auth/account/email" method="post">
+        <label for="email">Email Address</label>
+        <input class="field" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <form javascript_action="/auth/account/password" method="post">
+        <label for="new-password">Change Password</label>
+        <input class="field" name="new" type="password" placeholder="New Password" autocomplete="new-password">
+        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+
+        <br />
+
+        <label for="confirm-password">Confirm New Password</label>
+        <input class="field ignored" name="confirm" type="password" placeholder="Confirm Password" autocomplete="new-password">
+        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <span class="red url" onclick="delete_account()">Delete Account</span>
 </div>

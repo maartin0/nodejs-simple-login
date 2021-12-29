@@ -241,7 +241,7 @@ async function register(username, password) {
 
     userFile.json = {
         username: username,
-        hash: await bcrypt.hash(password, BCRYPT_ROUNDS)
+        hash: await bcrypt.hash(password, BCRYPT_ROUNDS),
     };
 
     await files.save(userFile);

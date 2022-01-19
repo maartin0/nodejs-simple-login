@@ -8,6 +8,7 @@ const CONFIGURATION_PATH = 'config/auth.json';
 
 files.read(CONFIGURATION_PATH).then((resolve) => {
   configFile = resolve;
+  if (!configFile.email.enable) return;
   transporter = nodemailer.createTransport({
     service: configFile.email.service,
     auth: configFile.email.auth,
@@ -16,6 +17,7 @@ files.read(CONFIGURATION_PATH).then((resolve) => {
 });
 
 async function send(to, subject, text) {
+  if (!configFile.email.enable) return;
   transporter.sendMail(
     {
       from: configFile.email.email,

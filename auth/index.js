@@ -125,10 +125,16 @@ router.get('/logout', session, async (request, response) => {
 });
 
 router.get('/forgot', noSession, async (request, response) => {
-  response.render('forgot', { csrfToken: request.csrfToken() });
+  if (configFile.email.enable) response.render('forgot', { csrfToken: request.csrfToken() });
+  else response.sendStatus(404);
 });
 
 router.post('/auth/forgot', noSession, async (request, response) => {
+  if (!configFile.email.enable) {
+    response.sendStatus(404);
+    return;
+  }
+
   response.send({ success: 1 });
 
   let { email } = request.body;

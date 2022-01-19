@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "bcrypt-promise": "^2.0.0",
+    "cookie-parser": "^1.4.6",
+    "csurf": "^1.11.0",
+    "eslint": "^8.6.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "express": "^4.17.2",
+    "handlebars": "^4.7.7",
+    "hbs": "~4.0.4",
+    "nodemailer": "^6.7.2",
+    "validator": "^13.7.0"
+  }
+}

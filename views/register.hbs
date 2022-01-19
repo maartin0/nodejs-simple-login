@@ -1,0 +1,38 @@
+<script src="/script/form.js"></script>
+<link rel="stylesheet" type="text/css" href="/style/form.css">
+
+<div class="form container">
+    <form js-action="/auth/register">
+        <h1 class="left">Register</h1>
+        <section id="notifications" class="left"></section>
+        
+        <label for="username" hidden>Username</label>
+        <input class="field left" name="username" placeholder="Username" type="username" autocomplete="username" required>
+
+        <br />
+
+        <label for="password" hidden>Password</label></td>
+        <input class="field left" name="password" type="password" placeholder="Password" autocomplete="new-password" required>
+        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+
+        <br />
+
+        <label for="password" hidden>Confirm Password</label>
+        <input class="field left ignored" name="confirm" type="password" placeholder="Confirm Password" autocomplete="new-password" required>
+        <button class="toggle" type="button" onclick="toggle_password()" aria-label="Show password." hidden>Show password</button>
+
+        <br />
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="redirect" value="/">
+        <input type="hidden" class="ignored" name="success" value="Redirecting...">
+
+        <div class="end">
+            <input class="field submit left ignored" name="submit" type="submit" value="Register">
+            <div class="fill"></div>
+            <span>
+                <a href="/login" class="green">Login</a>
+            </span>
+        </div>
+    </form>
+</div>

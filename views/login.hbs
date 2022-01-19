@@ -1,0 +1,34 @@
+<script src="/script/form.js"></script>
+<link rel="stylesheet" type="text/css" href="/style/form.css">
+
+<div class="form container">
+    <form js-action="/auth/login">
+        <h1 class="left">Login</h1>
+        <section id="notifications" class="left"></section>
+        
+        <label for="username" hidden>Username</label>
+        <input class="field left" name="username" placeholder="Username" type="username" autocomplete="username" required>
+
+        <br />
+
+        <label for="password" hidden>Password</label></td>
+        <input class="field left" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+        <button class="toggle" id="toggle-psk" type="button" onclick="togglePassword()" aria-label="Show password." hidden>Show password</button>
+
+        <br />
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="redirect" value="/">
+        <input type="hidden" class="ignored" name="success" value="Redirecting...">
+
+        <div class="end">
+            <input class="field submit ignored" name="submit" type="submit" value="Login">
+            <div class="fill"></div>
+            <span>
+                <a href="/register" class="green">Register</a>,
+                <br>
+                <a href="/forgot" class="red">Reset Password</a>
+            </span>
+        </div>
+    </form>
+</div>

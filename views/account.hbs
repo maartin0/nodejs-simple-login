@@ -1,0 +1,89 @@
+<script src="/script/form.js"></script>
+<link rel="stylesheet" type="text/css" href="/style/form.css">
+
+<script>
+    async function confirm_deletion() {
+        await sendXHR(
+            '/auth/account/delete',
+            { _csrf: document.getElementsByName('_csrf').item(0).value },
+            function success() {
+                notify("Successfully deleted account. Redirecting...");
+                setTimeout(() => window.location = "/login", 1000);
+            },
+            function failure() {
+                notify("An unknown error occurred, please try again later.");
+            }
+        );
+        save_override = null;
+    }
+
+    async function delete_account() {
+        await clearNotifications();
+        const confirm = window.confirm("Are you sure you want to delete your account? This action is irreversible!");
+        if (confirm) confirm_deletion();
+    }
+</script>
+
+<div class="form container">
+    <h1>Account Settings</h1>
+    <section id="notifications"></section>
+
+    <br /><br />
+
+    <form js-action="/auth/account/username">
+        <label for="username">Username</label>
+        <input class="field" id="username" name="username" placeholder="Username" type="username" autocomplete="username" value="{{username}}">
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <form js-action="/auth/account/name">
+        <label for="name">First Name</label>
+        <input class="field" id="name" name="name" placeholder="Name" type="text" autocomplete="given-name" value="{{name}}">
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <form js-action="/auth/account/email">
+        <label for="email">Email Address</label>
+        <input class="field" id="email" name="email" placeholder="Email Address" type="email" autocomplete="email" value="{{email}}">
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <form js-action="/auth/account/password">
+        <label for="password">Change Password</label>
+        <input class="field" id="password" name="password" type="password" placeholder="New Password" autocomplete="new-password">
+        <button class="toggle" type="button" js-for="password" onclick="togglePassword(this)" aria-label="Show password." hidden>Show password</button>
+
+        <br />
+
+        <label for="confirm">Confirm New Password</label>
+        <input class="field ignored" id="confirm" name="confirm" type="password" placeholder="Confirm Password" autocomplete="new-password">
+        <button class="toggle" type="button" js-for="confirm" onclick="togglePassword(this)" aria-label="Show password." hidden>Show password</button>
+
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <input type="hidden" class="ignored" name="success" value="Successfully Updated!">
+
+        <input class="field submit ignored" name="submit" type="submit" value="Update">
+    </form>
+
+    <br /><br />
+
+    <span class="red url" onclick="delete_account()">Delete Account</span>
+</div>

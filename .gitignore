@@ -6,3 +6,4 @@ data/users/*
 data/sessions/*
 config/*
 test.js
+.idea/

@@ -1,47 +1,41 @@
 const express = require('express');
-const handlebars = require('express-handlebars');
 const cookieParser = require('cookie-parser');
 const csrf = require('csurf');
+const path = require('path');
+
+const auth = require('./auth');
 
 const app = new express();
-const port = 80;
+const port = 8080;
 
 // ----------------------------------------------------
-app.use(express.static(__dirname + '/client/static/'));
-app.set('views', __dirname + '/client/templates/');
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'hbs');
 
-app.engine('handlebars', handlebars());
-app.set('view engine', 'handlebars');
-
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ----------------------------------------------------
 
 const csrfProtection = csrf({ cookie: true });
 app.use(csrfProtection);
 
-app.use(function (err, req, res, next) {
+app.use((err, req, res, next) => {
   if (err.code !== 'EBADCSRFTOKEN') return next(err);
 
   // handle CSRF token errors here
   res.status(403);
   res.send('403: Forbidden.');
-  
-  console.log("Invalid CSRF Token");
+
+  console.log('Invalid CSRF Token');
 });
 
-// ----------------------------------------------------
-
-const auth = require('./auth');
 app.use('/', auth.router);
 
-// ----------------------------------------------------
-
-app.get('/', auth.session, function (request, response) {
-    response.render('index');
+app.get('/', auth.session, (request, response) => {
+  response.render('index');
 });
 
 app.listen(port, () => {

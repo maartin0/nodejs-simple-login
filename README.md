@@ -1,7 +1,7 @@
 # nodejs-simple-login
 A simple login made in nodejs.
 
-Click [here](maartin0.ddns.net) to view a demo.
+Click [here](//maartin0.ddns.net/) to view a demo.
 
 `auth/auth.js` handles authentication<br>
 `auth/email.js` handles forgot password emails<br>
